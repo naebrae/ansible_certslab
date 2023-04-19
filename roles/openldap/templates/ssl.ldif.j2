@@ -1,0 +1,10 @@
+dn: cn=config
+changetype: modify
+add: olcTLSCACertificateFile
+olcTLSCACertificateFile: /etc/pki/tls/certs/localsrvca.crt
+-
+replace: olcTLSCertificateFile
+olcTLSCertificateFile: /etc/pki/tls/certs/ldap_lab_local.crt
+-
+replace: olcTLSCertificateKeyFile
+olcTLSCertificateKeyFile: /etc/pki/tls/private/ldap_lab_local.key

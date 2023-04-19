@@ -1,0 +1,171 @@
+#!/bin/bash
+
+BASE=`dirname $0`
+CADB=${BASE}/files/cacerts
+  
+if [ ! -d ${CADB}/ ]
+then
+  mkdir -p ${CADB}/
+fi
+
+if [ ! -f ${CADB}/localroot.idx ]
+then
+  touch ${CADB}/localroot.idx
+  echo "unique_subject = no" > ${CADB}/localroot.idx.attr
+fi
+
+if [ ! -f ${CADB}/localroot.srl ]
+then
+  openssl rand -hex -out ${CADB}/localroot.srl 20
+fi
+
+openssl req -newkey rsa:2048 -nodes \
+-keyout ${CADB}/localroot.key \
+-out ${CADB}/localroot.csr \
+-subj "/C=AU/O=Local Lab/OU=www.lab.local/CN=Local Lab Root"
+
+openssl ca -batch -selfsign -startdate 20200101010000Z -enddate 20491231122359Z \
+-in ${CADB}/localroot.csr \
+-out ${CADB}/localroot.crt \
+-keyfile ${CADB}/localroot.key \
+-name root_CA \
+-config <(cat \
+<(printf "[ root_CA ]\n") \
+<(printf "database=${CADB}/localroot.idx\n") \
+<(printf "unique_subject=no\n") \
+<(printf "default_md=sha256\n") \
+<(printf "email_in_dn=no\n") \
+<(printf "rand_serial=yes\n") \
+<(printf "default_days=365\n") \
+<(printf "serial=${CADB}/localroot.srl\n") \
+<(printf "new_certs_dir=${CADB}/\n") \
+<(printf "policy=policy_anything\n") \
+<(printf "[ policy_anything ]\n") \
+<(printf "countryName=optional\n") \
+<(printf "stateOrProvinceName=optional\n") \
+<(printf "localityName=optional\n") \
+<(printf "organizationName=optional\n") \
+<(printf "organizationalUnitName=optional\n") \
+<(printf "commonName=supplied\n") \
+<(printf "emailAddress=optional\n") \
+) \
+-extensions exts \
+-extfile <(cat \
+<(printf "[ exts ]\n") \
+<(printf "basicConstraints=critical,CA:true\n") \
+<(printf "keyUsage=critical,digitalSignature,keyCertSign,cRLSign\n") \
+<(printf "extendedKeyUsage=serverAuth,clientAuth\n") \
+<(printf "subjectKeyIdentifier=hash\n") \
+<(printf "authorityKeyIdentifier=keyid:always,issuer\n") \
+)
+
+openssl verify -CAfile ${CADB}/localroot.crt ${CADB}/localroot.crt
+
+
+if [ ! -f ${CADB}/localclnca.idx ]
+then
+  touch ${CADB}/localclnca.idx
+  echo "unique_subject = no" > ${CADB}/localclnca.idx.attr
+fi
+
+if [ ! -f ${CADB}/localclnca.srl ]
+then
+  openssl rand -hex -out ${CADB}/localclnca.srl 20
+fi
+
+openssl req -newkey rsa:2048 -nodes \
+-keyout ${CADB}/localclnca.key \
+-out ${CADB}/localclnca.csr \
+-subj "/C=AU/O=Local Lab/OU=www.lab.local/CN=Local Lab Clients CA"
+
+openssl ca -batch -startdate 20200101010000Z -enddate 20491231122359Z \
+-in ${CADB}/localclnca.csr \
+-out ${CADB}/localclnca.crt \
+-keyfile ${CADB}/localroot.key \
+-cert ${CADB}/localroot.crt \
+-name root_CA \
+-config <(cat \
+<(printf "[ root_CA ]\n") \
+<(printf "database=${CADB}/localroot.idx\n") \
+<(printf "unique_subject=no\n") \
+<(printf "default_md=sha256\n") \
+<(printf "email_in_dn=no\n") \
+<(printf "rand_serial=yes\n") \
+<(printf "default_days=365\n") \
+<(printf "serial=${CADB}/localroot.srl\n") \
+<(printf "new_certs_dir=${CADB}/\n") \
+<(printf "policy=policy_anything\n") \
+<(printf "[ policy_anything ]\n") \
+<(printf "countryName=optional\n") \
+<(printf "stateOrProvinceName=optional\n") \
+<(printf "localityName=optional\n") \
+<(printf "organizationName=optional\n") \
+<(printf "organizationalUnitName=optional\n") \
+<(printf "commonName=supplied\n") \
+<(printf "emailAddress=optional\n") \
+) \
+-extensions exts \
+-extfile <(cat \
+<(printf "[ exts ]\n") \
+<(printf "basicConstraints=critical,CA:true,pathlen:0\n") \
+<(printf "keyUsage=critical,digitalSignature,keyCertSign,cRLSign\n") \
+<(printf "extendedKeyUsage=serverAuth,clientAuth\n") \
+<(printf "subjectKeyIdentifier=hash\n") \
+<(printf "authorityKeyIdentifier=keyid:always,issuer\n") \
+)
+
+openssl verify -CAfile ${CADB}/localroot.crt ${CADB}/localclnca.crt
+
+if [ ! -f ${CADB}/localsrvca.idx ]
+then
+  touch ${CADB}/localsrvca.idx
+  echo "unique_subject = no" > ${CADB}/localsrvca.idx.attr
+fi
+
+if [ ! -f ${CADB}/localsrvca.srl ]
+then
+  openssl rand -hex -out ${CADB}/localsrvca.srl 20
+fi
+
+openssl req -newkey rsa:2048 -nodes \
+-keyout ${CADB}/localsrvca.key \
+-out ${CADB}/localsrvca.csr \
+-subj "/C=AU/O=Local Lab/OU=www.lab.local/CN=Local Lab Server CA"
+
+openssl ca -batch -days 7304 \
+-in ${CADB}/localsrvca.csr \
+-out ${CADB}/localsrvca.crt \
+-keyfile ${CADB}/localroot.key \
+-cert ${CADB}/localroot.crt \
+-name root_CA \
+-config <(cat \
+<(printf "[ root_CA ]\n") \
+<(printf "database=${CADB}/localroot.idx\n") \
+<(printf "unique_subject=no\n") \
+<(printf "default_md=sha256\n") \
+<(printf "email_in_dn=no\n") \
+<(printf "rand_serial=yes\n") \
+<(printf "default_days=365\n") \
+<(printf "serial=${CADB}/localroot.srl\n") \
+<(printf "new_certs_dir=${CADB}/\n") \
+<(printf "policy=policy_anything\n") \
+<(printf "[ policy_anything ]\n") \
+<(printf "countryName=optional\n") \
+<(printf "stateOrProvinceName=optional\n") \
+<(printf "localityName=optional\n") \
+<(printf "organizationName=optional\n") \
+<(printf "organizationalUnitName=optional\n") \
+<(printf "commonName=supplied\n") \
+<(printf "emailAddress=optional\n") \
+) \
+-extensions exts \
+-extfile <(cat \
+<(printf "[ exts ]\n") \
+<(printf "basicConstraints=critical,CA:true,pathlen:0\n") \
+<(printf "keyUsage=critical,digitalSignature,keyCertSign,cRLSign\n") \
+<(printf "extendedKeyUsage=serverAuth,clientAuth\n") \
+<(printf "subjectKeyIdentifier=hash\n") \
+<(printf "authorityKeyIdentifier=keyid:always,issuer\n") \
+)
+
+openssl verify -CAfile ${CADB}/localroot.crt ${CADB}/localsrvca.crt

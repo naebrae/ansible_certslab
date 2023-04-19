@@ -1,0 +1,198 @@
+- hosts: all
+  gather_facts: true
+  become: true
+  vars: 
+  - host_domain: lab.local
+  tasks:
+  - hostname: name={{ inventory_hostname }}.{{ host_domain }}
+  - yum: name=libselinux-python state=present
+    when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int <= 7
+  - selinux: policy=targeted state=permissive
+  - service: name=iptables enabled=false state=stopped
+    when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 5 and ansible_distribution_major_version|int <= 6
+  - service: name=firewalld enabled=false state=stopped
+    when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 7
+  - command: warn=no sed -i "s/^PasswordAuthentication no/PasswordAuthentication yes/" /etc/ssh/sshd_config
+    when: ansible_distribution == "CentOS" or ansible_distribution == "Amazon"
+  - service: name=sshd state=restarted
+    when: ansible_distribution == "CentOS" or ansible_distribution == "Amazon"
+
+  - copy: src=cacerts/localroot.crt dest=/etc/pki/tls/certs/ owner=root group=root mode=0644
+  - shell: cp /etc/pki/tls/certs/localroot.crt /etc/pki/ca-trust/source/anchors/ && update-ca-trust
+
+
+- hosts: crtsrv
+  gather_facts: true
+  become: true
+  vars:
+    ldap_base: "dc=lab,dc=local"
+    download_dir: /home/vagrant
+    cert_org: "/C=AU/ST=Western Australia/L=Perth/O=Organisation/OU=Unit/"
+    client_org: "/O=Organisation/OU=Clients/"
+    syslog_tcp_port: 10514
+
+  pre_tasks:
+  - copy: src=cacerts/localsrvca.crt dest=/etc/pki/tls/certs/ owner=root group=root mode=0644
+  - copy: src=cacerts/localsrvca.key dest=/etc/pki/tls/private/ owner=root group=root mode=0600
+  - copy: src=cacerts/localclnca.crt dest=/etc/pki/tls/certs/ owner=root group=root mode=0644
+  - copy: src=cacerts/localclnca.key dest=/etc/pki/tls/private/ owner=root group=root mode=0600
+  - shell: cat /etc/pki/tls/certs/localsrvca.crt /etc/pki/tls/certs/localclnca.crt /etc/pki/tls/certs/localroot.crt > /etc/pki/tls/certs/localtrusts.crt
+
+  # Not used, but create ocsp certificate
+  - shell: openssl genrsa -out /etc/pki/tls/private/ocsp_lab_local.key 4096
+  - shell: openssl req -new -nodes 
+      -key /etc/pki/tls/private/ocsp_lab_local.key 
+      -out /etc/pki/tls/certs/ocsp_lab_local.csr 
+      -subj "/C=AU/O=Local Lab/CN=ocsp.lab.local"
+  - shell: openssl x509 -req -days 3652 -sha256 
+      -in /etc/pki/tls/certs/ocsp_lab_local.csr
+      -out /etc/pki/tls/certs/ocsp_lab_local.crt 
+      -CA /etc/pki/tls/certs/localsrvca.crt 
+      -CAkey /etc/pki/tls/private/localsrvca.key 
+      -CAcreateserial 
+      -extensions EXTS \
+      -extfile <(cat \
+      <(printf "[EXTS]\n") \
+      <(printf "basicConstraints=critical,CA:false\n") \
+      <(printf "subjectKeyIdentifier=hash\n") \
+      <(printf "authorityKeyIdentifier=keyid:always,issuer\n") \
+      <(printf "keyUsage=critical,digitalSignature\n") \
+      <(printf "extendedKeyUsage=critical,OCSPSigning\n") \
+      )
+    args:
+      executable: /bin/bash
+
+  roles:
+  - apache
+  - nginx
+  - haproxy
+  - postfix
+  - dovecot
+  - 389ds
+  - { role: openldap, when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int <= 7 }
+  - mariadb
+  - postgresql
+  - rsyslog
+  - { role: tomcat, when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int <= 7 }
+  - vsftpd
+  - mkclicerts
+
+
+- hosts: crtcli
+  gather_facts: true
+  become: true
+  vars:
+    client_org: "/O=Organisation/OU=Clients/"
+    syslog_server: crtsrv.lab.local
+    syslog_tcp_port: 10514
+  tasks:
+  - yum:
+      name:
+      - postfix
+      - mailx
+      - telnet
+      - mutt
+      - openldap-clients
+      - mariadb
+      - postgresql
+      state: installed
+  - yum:
+      name:
+      - python-ldap
+      - python-psycopg2
+      state: installed
+    when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int <= 7
+  - yum:
+      name:
+      - python3
+      - python3-ldap
+      - python3-psycopg2
+      state: installed
+    when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 8
+
+  - yum: name=policycoreutils-python state=installed
+    when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int <= 7
+  - yum: name=policycoreutils-python-utils state=installed
+    when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 8
+  - shell: semanage port -a -t syslogd_port_t -p tcp {{ syslog_tcp_port }}
+    ignore_errors: true
+
+  - yum: name=rsyslog-gnutls state=installed
+  - template: src=sslclient.j2 dest=/etc/rsyslog.d/sslclient.conf owner=root group=root mode=0600
+  - service: name=rsyslog state=restarted
+
+  - copy: src=main_cf_cli dest=/tmp
+  - copy: src=muttrc dest=/home/vagrant/.muttrc owner=vagrant group=vagrant
+  - shell: for i in `cat /tmp/main_cf_cli | sed "s/ //g"`; do postconf -e "$i"; done
+  - service: name=postfix state=restarted
+
+  - yum: name=nss-tools state=installed
+#  - command: /usr/bin/certutil -A -n LocalRoot -t C,, -a -i /etc/pki/tls/certs/localroot.crt -d /etc/openldap/certs/
+
+  - file: path=/etc/openldap/cacerts state=directory
+#  - shell: warn=no ln -f -s /etc/pki/tls/certs/localroot.crt /etc/openldap/cacerts/`openssl x509 -hash -in /etc/pki/tls/certs/localroot.crt -noout`.0
+#  - shell: warn=no ln -f -s /etc/pki/tls/certs/localroot.crt /etc/pki/tls/certs/`openssl x509 -hash -in /etc/pki/tls/certs/localroot.crt -noout`.0
+
+  - copy: src=ldapchk.py dest=/home/vagrant owner=vagrant group=vagrant mode=0744
+  - copy: src=psqlchk.py dest=/home/vagrant owner=vagrant group=vagrant mode=0744
+
+  - copy: src=mysql-ssl.cnf dest=/etc/my.cnf.d/ssl.cnf
+
+  - file: path=/home/vagrant/.postgresql state=directory owner=vagrant group=vagrant mode=0700
+  - file: src=/etc/pki/tls/certs/localroot.crt dest=/home/vagrant/.postgresql/root.crt state=link
+  # - file: src=/etc/pki/tls/certs/localroot.crt dest=/home/vagrant/.postgresql/root.crt state=link owner=vagrant group=vagrant mode=0600
+
+  - block:
+    # Collect client certificates from crtsrv for vagrant user
+    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.local/~/vagrantcln.crt
+    - file: path=/home/vagrant/vagrantcln.crt owner=vagrant group=vagrant mode=0600
+    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.local/~/vagrantcln.key
+    - file: path=/home/vagrant/vagrantcln.key owner=vagrant group=vagrant mode=0600
+    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.local/~/vagrantsrv.crt
+    - file: path=/home/vagrant/vagrantsrv.crt owner=vagrant group=vagrant mode=0600
+    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.local/~/vagrantsrv.key
+    - file: path=/home/vagrant/vagrantsrv.key owner=vagrant group=vagrant mode=0600
+    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.local/~/sslusercln.crt
+    - file: path=/home/vagrant/sslusercln.crt owner=vagrant group=vagrant mode=0600
+    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.local/~/sslusercln.key
+    - file: path=/home/vagrant/sslusercln.key owner=vagrant group=vagrant mode=0600
+    ignore_errors: true
+
+  # Create self-signed client certificate
+  - shell: openssl req -newkey rsa:2048 -x509 -nodes -days 365 -sha256
+     -keyout /home/vagrant/vagrantss.key
+     -out /home/vagrant/vagrantss.crt
+     -subj "/emailAddress=vagrant\@lab.local{{ client_org }}CN=vagrant"
+     -extensions EXTS
+     -config <(cat
+     <(printf "[ req ]\n")
+     <(printf "distinguished_name=req_distinguished_name\n")
+     <(printf "[ req_distinguished_name ]\n")
+     <(printf "[EXTS]\n")
+     <(printf "subjectKeyIdentifier=hash\n")
+     <(printf "authorityKeyIdentifier=keyid\n")
+     <(printf "subjectAltName=email:copy\n")
+     <(printf "keyUsage=critical,digitalSignature,keyCertSign\n")
+     <(printf "extendedKeyUsage=clientAuth,emailProtection\n")
+     <(printf "basicConstraints=critical,CA:false\n")
+     )
+    args:
+      executable: /bin/bash
+  - file: path=/home/vagrant/vagrantss.crt owner=vagrant group=vagrant mode=0600
+  - file: path=/home/vagrant/vagrantss.key owner=vagrant group=vagrant mode=0600
+  
+  - file: path=/home/vagrant/sslscan state=directory owner=vagrant group=vagrant mode=0755
+  - copy: src=sslscan dest=/home/vagrant/sslscan/sslscan owner=vagrant group=vagrant mode=0744
+# Replace the previous two lines with the following to download and compile the latest sslscan
+#  - yum: name={{ item }} state=installed
+#    with_items:
+#      - git 
+#      - gcc
+#      - openssl-devel 
+#      - zlib-devel 
+#  - name: Cloning //github.com/rbsec/sslscan
+#    shell: git clone https://github.com/rbsec/sslscan.git
+#    become: false
+#  - name: Compiling sslscan
+#    shell: chdir=sslscan make static
+#    become: false

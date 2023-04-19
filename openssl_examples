@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# apache
+echo | openssl s_client -showcerts -connect crtsrv:443
+echo | openssl s_client -showcerts -connect crtsrv:443 -servername crt1
+echo | openssl s_client -showcerts -connect crtsrv:443 -servername crt2
+
+# haproxy
+echo | openssl s_client -showcerts -connect crtsrv:1443
+echo | openssl s_client -showcerts -connect crtsrv:1443 -servername crt1
+echo | openssl s_client -showcerts -connect crtsrv:1443 -servername crt2
+
+# nginx
+echo | openssl s_client -showcerts -connect crtsrv:2443
+echo | openssl s_client -showcerts -connect crtsrv:2443 -servername crt1
+echo | openssl s_client -showcerts -connect crtsrv:2443 -servername crt2
+
+# tomcat
+echo | openssl s_client -showcerts -connect crtsrv:8443
+
+# vsftp
+echo | openssl s_client -showcerts -connect crtsrv:21 -starttls ftp
+echo | openssl s_client -showcerts -connect crtsrv:990
+
+# postfix
+echo | openssl s_client -showcerts -connect crtsrv:25 -starttls smtp
+echo | openssl s_client -showcerts -connect crtsrv:465
+
+# dovcot
+echo | openssl s_client -showcerts -connect crtsrv:110 -starttls pop3
+echo | openssl s_client -showcerts -connect crtsrv:995
+
+# dovcot
+echo | openssl s_client -showcerts -connect crtsrv:143 -starttls imap
+echo | openssl s_client -showcerts -connect crtsrv:993
+
+# openldap
+echo | openssl s_client -showcerts -connect crtsrv:389 -starttls ldap
+echo | openssl s_client -showcerts -connect crtsrv:636
+
+# 389ds
+echo | openssl s_client -showcerts -connect crtsrv:1389 -starttls ldap
+echo | openssl s_client -showcerts -connect crtsrv:1636
+
+# postgresql
+echo | openssl s_client -showcerts -connect crtsrv:5432 -starttls postgres

@@ -1,0 +1,78 @@
+#!/bin/bash
+
+BASE=`dirname $0`
+CADB=${BASE}/files/cacerts
+
+if [ ! -d ${CADB}/ ]
+then
+  mkdir -p ${CADB}/
+fi
+
+if [ ! -f ${CADB}/localroot.srl ]
+then
+  openssl rand -hex -out ${CADB}/localroot.srl 20
+fi
+
+openssl req -new -newkey rsa:2048 -x509 -nodes -sha256 -days 7304 \
+-keyout ${CADB}/localroot.key \
+-out ${CADB}/localroot.crt \
+-subj "/C=AU/O=Local Lab/OU=www.lab.local/CN=Local Lab Root" \
+-extensions exts \
+-config <(cat \
+<(printf "[ req ]\n") \
+<(printf "distinguished_name=req_distinguished_name\n") \
+<(printf "[ req_distinguished_name ]\n") \
+<(printf "[ exts ]\n") \
+<(printf "keyUsage=critical,digitalSignature,keyCertSign,cRLSign\n") \
+<(printf "basicConstraints=critical,CA:true\n") \
+<(printf "subjectKeyIdentifier=hash\n") \
+<(printf "authorityKeyIdentifier=keyid\n") \
+)
+
+openssl verify -CAfile ${CADB}/localroot.crt ${CADB}/localroot.crt
+
+
+openssl req -newkey rsa:2048 -nodes \
+-keyout ${CADB}/localclnca.key \
+-out ${CADB}/localclnca.csr \
+-subj "/C=AU/O=Local Lab/OU=www.lab.local/CN=Local Lab Clients CA"
+
+openssl x509 -req -days 7304 -sha256 \
+-in ${CADB}/localclnca.csr \
+-out ${CADB}/localclnca.crt \
+-CA ${CADB}/localroot.crt -CAkey ${CADB}/localroot.key \
+-CAcreateserial -CAserial ${CADB}/localroot.srl \
+-extensions exts \
+-extfile <(cat \
+<(printf "[ exts ]\n") \
+<(printf "basicConstraints=critical,CA:true,pathlen:0\n") \
+<(printf "keyUsage=critical,digitalSignature,keyCertSign,cRLSign\n") \
+<(printf "extendedKeyUsage=serverAuth,clientAuth\n") \
+<(printf "subjectKeyIdentifier=hash\n") \
+<(printf "authorityKeyIdentifier=keyid:always,issuer\n") \
+)
+
+openssl verify -CAfile ${CADB}/localroot.crt ${CADB}/localclnca.crt
+
+
+openssl req -newkey rsa:2048 -nodes \
+-keyout ${CADB}/localsrvca.key \
+-out ${CADB}/localsrvca.csr \
+-subj "/C=AU/O=Local Lab/OU=www.lab.local/CN=Local Lab Server CA"
+
+openssl x509 -req -days 7304 -sha256 \
+-in ${CADB}/localsrvca.csr \
+-out ${CADB}/localsrvca.crt \
+-CA ${CADB}/localroot.crt -CAkey ${CADB}/localroot.key \
+-CAcreateserial -CAserial ${CADB}/localroot.srl \
+-extensions exts \
+-extfile <(cat \
+<(printf "[ exts ]\n") \
+<(printf "basicConstraints=critical,CA:true,pathlen:0\n") \
+<(printf "keyUsage=critical,digitalSignature,keyCertSign,cRLSign\n") \
+<(printf "extendedKeyUsage=serverAuth,clientAuth\n") \
+<(printf "subjectKeyIdentifier=hash\n") \
+<(printf "authorityKeyIdentifier=keyid:always,issuer\n") \
+)
+
+openssl verify -CAfile ${CADB}/localroot.crt ${CADB}/localsrvca.crt

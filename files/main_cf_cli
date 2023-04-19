@@ -1,0 +1,13 @@
+ 
+relayhost = [172.16.1.201]
+inet_interfaces = loopback-only
+inet_protocols = ipv4
+
+smtp_tls_enforce_peername = yes
+smtp_tls_security_level = verify
+smtp_tls_loglevel = 1
+smtp_tls_note_starttls_offer = yes
+smtp_tls_CAfile = /etc/pki/tls/certs/ca-bundle.crt
+smtp_tls_mandatory_protocols = !SSLv2, !SSLv3
+smtp_tls_protocols = !SSLv2, !SSLv3
+smtp_tls_exclude_ciphers = EXP, MEDIUM, LOW, DES, 3DES

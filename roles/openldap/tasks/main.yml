@@ -1,0 +1,65 @@
+---
+- yum:
+    name:
+    - openldap
+    - openldap-clients
+    - openldap-servers
+    state: installed
+
+- name: start slapd
+  service: name=slapd enabled=yes state=started
+
+- shell: creates=/etc/pki/tls/certs/ldap_lab_local.csr openssl req -newkey rsa:2048 -nodes
+   -keyout /etc/pki/tls/private/ldap_lab_local.key
+   -out /etc/pki/tls/certs/ldap_lab_local.csr
+   -subj "{{ cert_org }}CN=ldap.lab.local"
+- shell: openssl x509 -req -days 365 -sha256
+   -in /etc/pki/tls/certs/ldap_lab_local.csr
+   -out /etc/pki/tls/certs/ldap_lab_local.crt
+   -CA /etc/pki/tls/certs/localsrvca.crt 
+   -CAkey /etc/pki/tls/private/localsrvca.key 
+   -CAcreateserial
+   -extensions EXTS
+   -extfile <(cat
+   <(printf "[EXTS]\n")
+   <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
+   <(printf "subjectKeyIdentifier=hash\n")
+   <(printf "subjectAltName=DNS:ldap.lab.local\n")
+   <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
+   <(printf "extendedKeyUsage=serverAuth,clientAuth\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localsrvca.crl\n")
+   <(printf "certificatePolicies=@polsect\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localsrvca.crt\n")
+   <(printf "basicConstraints=critical,CA:false\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   )
+  args:
+   executable: /bin/bash
+
+- template: src={{ item.src }} dest={{ item.dest }}
+  with_items:
+  - { src: 'config.el7.ldif.j2', dest: '{{ download_dir }}/config.ldif' }
+  - { src: 'ssl.ldif.j2', dest: '{{ download_dir }}/ssl.ldif' }
+  - { src: 'base.ldif.j2', dest: '{{ download_dir }}/base.ldif' }
+  when: ansible_os_family == "RedHat" and (ansible_distribution_major_version|int >= 7 or ansible_distribution_major_version|int == 2)
+  ignore_errors: true
+
+- command: "{{ item }}"
+  with_items:
+  - ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/cosine.ldif
+  - ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/nis.ldif
+  - ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/inetorgperson.ldif
+  when: ansible_os_family == "RedHat" and (ansible_distribution_major_version|int >= 7 or ansible_distribution_major_version|int == 2)
+  ignore_errors: true
+
+- command: "{{ item }}"
+  with_items:
+  - ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f {{ download_dir }}/config.ldif
+  - ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f {{ download_dir }}/ssl.ldif
+  - ldapadd -c -x -w Password1 -D cn=manager,dc=lab,dc=local -H ldapi:/// -f {{ download_dir }}/base.ldif
+  ignore_errors: true
+
+- template: src=slapd.j2 dest=/etc/sysconfig/slapd
+
+- name: restart openldap
+  service: name=slapd state=restarted

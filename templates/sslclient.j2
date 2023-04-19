@@ -1,0 +1,14 @@
+$DefaultNetstreamDriver gtls
+$DefaultNetstreamDriverCAFile /etc/pki/tls/certs/localroot.crt
+
+$ActionSendStreamDriverMode 1
+$ActionSendStreamDriverAuthMode anon
+
+$WorkDirectory /var/lib/rsyslog
+$ActionQueueType LinkedList
+$ActionQueueFileName {{ syslog_server }}
+$ActionQueueMaxDiskSpace 1g
+$ActionResumeRetryCount -1
+$ActionQueueSaveOnShutdown on
+
+*.* @@{{ syslog_server }}:{{ syslog_tcp_port }}

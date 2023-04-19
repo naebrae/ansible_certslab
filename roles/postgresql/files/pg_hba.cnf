@@ -1,0 +1,5 @@
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+local   all             all                                     peer
+hostssl all             vagrant         0.0.0.0/0               cert    clientcert=1
+hostssl all             ssluser         0.0.0.0/0               md5     clientcert=0
+hostssl all             all             0.0.0.0/0               md5     clientcert=0

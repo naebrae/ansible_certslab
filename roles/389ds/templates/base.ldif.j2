@@ -1,0 +1,85 @@
+dn: {{ ldap_base }}
+objectClass: dcObject
+objectClass: organization
+o: {{ ldap_base_o }}
+dc: {{ ldap_base_dc }}
+
+dn: ou=people,{{ ldap_base }}
+objectClass: organizationalUnit
+objectClass: top
+ou: people
+aci: (targetattr = "objectclass || cn || uid || uidNumber || gidNumber || homeDirectory || loginShell")(version 3.0; aci "anon read access"; allow(read,search) userdn="ldap:///anyone";)
+
+dn: ou=groups,{{ ldap_base }}
+objectClass: organizationalUnit
+objectClass: top
+ou: groups
+aci: (targetattr = "objectclass || cn || gidNumber || memberuid || uniqueMember")(version 3.0; aci "anon read access"; allow(read,search,compare) userdn="ldap:///anyone";)
+
+dn: cn=doe,ou=groups,{{ ldap_base }}
+objectClass: top
+objectClass: posixGroup
+cn: doe
+gidNumber: 10000
+memberUid: janed
+
+dn: cn=rae,ou=groups,{{ ldap_base }}
+objectClass: top
+objectClass: posixGroup
+cn: rae
+gidNumber: 10001
+memberUid: johnd
+
+dn: cn=mee,ou=groups,{{ ldap_base }}
+objectClass: top
+objectClass: posixGroup
+cn: mee
+gidNumber: 10002
+
+dn: cn=far,ou=groups,{{ ldap_base }}
+objectClass: top
+objectClass: groupOfUniqueNames
+cn: far
+uniqueMember: uid=janed,ou=people,{{ ldap_base }}
+
+dn: cn=sew,ou=groups,{{ ldap_base }}
+objectClass: top
+objectClass: groupOfUniqueNames
+cn: sew
+uniqueMember: uid=johnd,ou=people,{{ ldap_base }}
+
+dn: uid=johnd,ou=people,{{ ldap_base }}
+cn: John Doe
+givenName: John
+sn: Doe
+uid: johnd
+uidNumber: 10000
+gidNumber: 10002
+homeDirectory: /home/johnd
+objectClass: top
+objectClass: posixAccount
+objectClass: shadowAccount
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+loginShell: /bin/bash
+mail: johnd@localhost.localdomain
+userPassword: {SSHA}28hB3IUUBiz8aUmVA8PvFiXz/f7zEl1C
+
+dn: uid=janed,ou=people,{{ ldap_base }}
+cn: Jane Doe
+givenName: Jane
+sn: Doe
+uid: janed
+uidNumber: 10001
+gidNumber: 10002
+homeDirectory: /home/janed
+objectClass: top
+objectClass: posixAccount
+objectClass: shadowAccount
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+loginShell: /bin/bash
+mail: janed@localhost.localdomain
+userPassword: {SSHA}nSTdo0CYYUS+Hqm29tWFsPHONmLcXJkw

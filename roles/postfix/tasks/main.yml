@@ -1,0 +1,41 @@
+---
+- yum:
+    name:
+    - postfix
+    state: installed
+
+- copy: src=main_cf_srv dest=/tmp
+- shell: cat /tmp/main_cf_srv >> /etc/postfix/main.cf
+
+- shell: creates=/etc/pki/tls/certs/postfix.csr openssl req -newkey rsa:2048 -nodes
+   -keyout /etc/pki/tls/private/postfix.key
+   -out /etc/pki/tls/certs/postfix.csr
+   -subj "{{ cert_org }}CN=smtp.lab.local"
+- shell: openssl x509 -req -days 365 -sha256
+   -in /etc/pki/tls/certs/postfix.csr
+   -out /etc/pki/tls/certs/postfix.pem
+   -CA /etc/pki/tls/certs/localsrvca.crt 
+   -CAkey /etc/pki/tls/private/localsrvca.key 
+   -CAcreateserial
+   -extensions EXTS
+   -extfile <(cat
+   <(printf "[EXTS]\n")
+   <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
+   <(printf "subjectKeyIdentifier=hash\n")
+   <(printf "subjectAltName=DNS:smtp.lab.local,DNS:`hostname`,DNS:172.16.1.201,IP:172.16.1.201\n")
+   <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
+   <(printf "extendedKeyUsage=serverAuth,clientAuth\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localsrvca.crl\n")
+   <(printf "certificatePolicies=@polsect\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localsrvca.crt\n")
+   <(printf "basicConstraints=critical,CA:false\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   )
+  args:
+   executable: /bin/bash
+
+- shell: openssl dhparam -out /etc/pki/tls/private/postfix.dh.param 1024
+- shell: echo -e "smtps    inet  n       -       n       -       -       smtpd\n  -o smtpd_tls_wrappermode=yes" >> /etc/postfix/master.cf
+
+- name: restart postfix
+  service: name=postfix state=restarted

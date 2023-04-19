@@ -1,0 +1,49 @@
+#!/bin/bash
+
+PATH=$PATH:~/sslscan
+
+# apache
+sslscan crtsrv:443
+sslscan --sni-name=crt1.lab.local crtsrv:443
+sslscan --sni-name=crt2.lab.local crtsrv:443
+
+# haproxy
+sslscan crtsrv:1443
+
+# nginx
+sslscan crtsrv:2443
+sslscan --sni-name=crt1.lab.local crtsrv:2443
+sslscan --sni-name=crt2.lab.local crtsrv:2443
+
+# tomcat
+sslscan crtsrv:8443
+
+# vsftp
+sslscan --starttls-ftp  crtsrv:21
+sslscan                 crtsrv:990
+
+# postfix
+sslscan --starttls-smtp crtsrv:25
+sslscan                 crtsrv:465
+
+# dovecot
+sslscan --starttls-pop3 crtsrv:110
+sslscan                 crtsrv:995
+
+# dovecot
+sslscan --starttls-imap crtsrv:143
+sslscan                 crtsrv:993
+
+# openldap
+sslscan --starttls-ldap crtsrv:389
+sslscan                 crtsrv:636
+
+# 389ds
+sslscan --starttls-ldap crtsrv:1389
+sslscan                 crtsrv:1636
+
+# mariadb
+sslscan --starttls-mysql crtsrv:3306
+
+# postgresql
+sslscan --starttls-psql  crtsrv:5432

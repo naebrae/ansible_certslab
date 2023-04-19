@@ -1,0 +1,17 @@
+[General]
+FullMachineName= {{ ansible_fqdn }}
+SuiteSpotUserID= dirsrv
+SuiteSpotGroup= dirsrv
+AdminDomain= lab.local
+ConfigDirectoryAdminID= admin
+ConfigDirectoryAdminPwd= Password1
+
+[slapd]
+SlapdConfigForMC= Yes
+UseExistingMC= No
+ServerPort= 1389
+ServerIdentifier= {{ inventory_hostname }}
+Suffix= {{ ldap_base }}
+RootDN= cn=Directory Manager
+RootDNPwd= Password1
+InstallLdifFile= /tmp/base.ldif

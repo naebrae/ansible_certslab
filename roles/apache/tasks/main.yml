@@ -1,0 +1,125 @@
+---
+- yum:
+    name:
+    - httpd
+    - mod_ssl
+    state: installed
+ 
+- copy: src=000_localhost.conf dest=/etc/httpd/conf.d/
+- copy: src=000_localhost dest=/etc/httpd/conf.d/
+
+- shell: creates=/etc/pki/tls/certs/localhost.csr openssl req -newkey rsa:2048 -nodes
+   -keyout /etc/pki/tls/private/localhost.key 
+   -out /etc/pki/tls/certs/localhost.csr 
+   -subj "/CN=localhost"
+- shell: openssl x509 -req -days 365 -sha256
+   -in /etc/pki/tls/certs/localhost.csr
+   -out /etc/pki/tls/certs/localhost.crt
+   -CA /etc/pki/tls/certs/localsrvca.crt 
+   -CAkey /etc/pki/tls/private/localsrvca.key 
+   -CAcreateserial
+   -extensions EXTS
+   -extfile <(cat
+   <(printf "[EXTS]\n")
+   <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
+   <(printf "subjectKeyIdentifier=hash\n")
+   <(printf "subjectAltName=DNS:localhost,IP:127.0.0.1\n")
+   <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
+   <(printf "extendedKeyUsage=serverAuth,clientAuth\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localsrvca.crl\n")
+   <(printf "certificatePolicies=@polsect\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localsrvca.crt\n")
+   <(printf "basicConstraints=critical,CA:false\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   )
+  args:
+    executable: /bin/bash
+
+# Not used, but create wildcard certificate
+- shell: creates=/etc/pki/tls/certs/star_lab_local.csr openssl req -newkey rsa:2048 -nodes
+   -keyout /etc/pki/tls/private/star_lab_local.key 
+   -out /etc/pki/tls/certs/star_lab_local.csr 
+   -subj "{{ cert_org }}CN=*.lab.local"
+- shell: openssl x509 -req -days 365 -sha256
+   -in /etc/pki/tls/certs/star_lab_local.csr
+   -out /etc/pki/tls/certs/star_lab_local.crt
+   -CA /etc/pki/tls/certs/localsrvca.crt 
+   -CAkey /etc/pki/tls/private/localsrvca.key 
+   -CAcreateserial
+   -extensions EXTS
+   -extfile <(cat
+   <(printf "[EXTS]\n")
+   <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
+   <(printf "subjectKeyIdentifier=hash\n")
+   <(printf "subjectAltName=DNS:*.lab.local,DNS:lab.local\n")
+   <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
+   <(printf "extendedKeyUsage=serverAuth,clientAuth\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localsrvca.crl\n")
+   <(printf "certificatePolicies=@polsect\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localsrvca.crt\n")
+   <(printf "basicConstraints=critical,CA:false\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   )
+  args:
+    executable: /bin/bash
+
+- copy: src=ssl.conf.24 dest=/etc/httpd/conf.d/ssl.conf
+- copy: src=001_crt1.conf dest=/etc/httpd/conf.d/
+- copy: src=002_crt2.conf dest=/etc/httpd/conf.d/
+
+- shell: creates=/etc/pki/tls/certs/crt1_lab_local.csr openssl req -newkey rsa:2048 -nodes
+   -keyout /etc/pki/tls/private/crt1_lab_local.key
+   -out /etc/pki/tls/certs/crt1_lab_local.csr
+   -subj "{{ cert_org }}CN=crt1.lab.local"
+- shell: openssl x509 -req -days 365 -sha256
+   -in /etc/pki/tls/certs/crt1_lab_local.csr
+   -out /etc/pki/tls/certs/crt1_lab_local.crt
+   -CA /etc/pki/tls/certs/localsrvca.crt 
+   -CAkey /etc/pki/tls/private/localsrvca.key 
+   -CAcreateserial
+   -extensions EXTS
+   -extfile <(cat
+   <(printf "[EXTS]\n")
+   <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
+   <(printf "subjectKeyIdentifier=hash\n")
+   <(printf "subjectAltName=DNS:crt1.lab.local\n")
+   <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
+   <(printf "extendedKeyUsage=serverAuth,clientAuth\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localsrvca.crl\n")
+   <(printf "certificatePolicies=@polsect\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localsrvca.crt\n")
+   <(printf "basicConstraints=critical,CA:false\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   )
+  args:
+    executable: /bin/bash
+
+- shell: creates=/etc/pki/tls/certs/crt2_lab_local.csr openssl req -newkey rsa:2048 -nodes
+   -keyout /etc/pki/tls/private/crt2_lab_local.key
+   -out /etc/pki/tls/certs/crt2_lab_local.csr
+   -subj "{{ cert_org }}CN=crt2.lab.local"
+- shell: openssl x509 -req -days 365 -sha256
+   -in /etc/pki/tls/certs/crt2_lab_local.csr
+   -out /etc/pki/tls/certs/crt2_lab_local.crt
+   -CA /etc/pki/tls/certs/localsrvca.crt 
+   -CAkey /etc/pki/tls/private/localsrvca.key 
+   -CAcreateserial
+   -extensions EXTS
+   -extfile <(cat
+   <(printf "[EXTS]\n")
+   <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
+   <(printf "subjectKeyIdentifier=hash\n")
+   <(printf "subjectAltName=DNS:crt2.lab.local\n")
+   <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
+   <(printf "extendedKeyUsage=serverAuth,clientAuth\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localsrvca.crl\n")
+   <(printf "certificatePolicies=@polsect\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localsrvca.crt\n")
+   <(printf "basicConstraints=critical,CA:false\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   )
+  args:
+    executable: /bin/bash
+
+- name: restart httpd
+  service: name=httpd state=restarted

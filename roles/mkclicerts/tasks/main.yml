@@ -1,0 +1,90 @@
+--- 
+# Create client certificate using Clients CA
+- shell: creates=/home/vagrant/vagrantcln.csr openssl req -newkey rsa:2048 -nodes
+   -keyout /home/vagrant/vagrantcln.key
+   -out /home/vagrant/vagrantcln.csr
+   -subj "/emailAddress=vagrant\@lab.local{{ client_org }}CN=vagrant"
+- shell: openssl x509 -req -days 365 -sha256
+   -in /home/vagrant/vagrantcln.csr
+   -out /home/vagrant/vagrantcln.crt
+   -CA /etc/pki/tls/certs/localclnca.crt 
+   -CAkey /etc/pki/tls/private/localclnca.key 
+   -CAcreateserial
+   -extensions EXTS
+   -extfile <(cat
+   <(printf "[EXTS]\n")
+   <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
+   <(printf "subjectKeyIdentifier=hash\n")
+   <(printf "subjectAltName=email:copy\n")
+   <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
+   <(printf "extendedKeyUsage=clientAuth,emailProtection\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localclnca.crl\n")
+   <(printf "certificatePolicies=@polsect\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localclnca.crt\n")
+   <(printf "basicConstraints=critical,CA:false\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   )
+  args:
+    executable: /bin/bash
+- file: path=/home/vagrant/vagrantcln.crt owner=vagrant group=vagrant
+- file: path=/home/vagrant/vagrantcln.key owner=vagrant group=vagrant
+
+# Create client certificate using Server CA (for testing issuer requirements)
+- shell: creates=/home/vagrant/vagrantsrv.csr openssl req -newkey rsa:2048 -nodes
+   -keyout /home/vagrant/vagrantsrv.key
+   -out /home/vagrant/vagrantsrv.csr
+   -subj "/emailAddress=vagrant\@lab.local{{ client_org }}CN=vagrant"
+- shell: openssl x509 -req -days 365 -sha256
+   -in /home/vagrant/vagrantsrv.csr
+   -out /home/vagrant/vagrantsrv.crt
+   -CA /etc/pki/tls/certs/localsrvca.crt 
+   -CAkey /etc/pki/tls/private/localsrvca.key 
+   -CAcreateserial
+   -extensions EXTS
+   -extfile <(cat
+   <(printf "[EXTS]\n")
+   <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
+   <(printf "subjectKeyIdentifier=hash\n")
+   <(printf "subjectAltName=email:copy\n")
+   <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
+   <(printf "extendedKeyUsage=clientAuth,emailProtection\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localsrvca.crl\n")
+   <(printf "certificatePolicies=@polsect\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localsrvca.crt\n")
+   <(printf "basicConstraints=critical,CA:false\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   )
+  args:
+    executable: /bin/bash
+- file: path=/home/vagrant/vagrantsrv.crt owner=vagrant group=vagrant
+- file: path=/home/vagrant/vagrantsrv.key owner=vagrant group=vagrant
+
+# Create client certificate using Clients CA
+- shell: creates=/home/vagrant/sslusercln.csr openssl req -newkey rsa:2048 -nodes
+   -keyout /home/vagrant/sslusercln.key
+   -out /home/vagrant/sslusercln.csr
+   -subj "/emailAddress=ssluser\@lab.local{{ client_org }}CN=ssluser"
+- shell: openssl x509 -req -days 365 -sha256
+   -in /home/vagrant/sslusercln.csr
+   -out /home/vagrant/sslusercln.crt
+   -CA /etc/pki/tls/certs/localclnca.crt 
+   -CAkey /etc/pki/tls/private/localclnca.key 
+   -CAcreateserial
+   -extensions EXTS
+   -extfile <(cat
+   <(printf "[EXTS]\n")
+   <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
+   <(printf "subjectKeyIdentifier=hash\n")
+   <(printf "subjectAltName=email:copy\n")
+   <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
+   <(printf "extendedKeyUsage=clientAuth,emailProtection\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localclnca.crl\n")
+   <(printf "certificatePolicies=@polsect\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localclnca.crt\n")
+   <(printf "basicConstraints=critical,CA:false\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   )
+  args:
+    executable: /bin/bash
+- file: path=/home/vagrant/sslusercln.crt owner=vagrant group=vagrant
+- file: path=/home/vagrant/sslusercln.key owner=vagrant group=vagrant

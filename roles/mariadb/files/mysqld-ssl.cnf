@@ -1,0 +1,4 @@
+[mysqld]
+ssl-ca=/etc/pki/tls/certs/localtrusts.crt
+ssl-cert=/etc/pki/tls/certs/mariadb.crt
+ssl-key=/etc/pki/tls/private/mariadb.key

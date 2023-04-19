@@ -1,0 +1,10 @@
+$DefaultNetstreamDriver gtls
+$DefaultNetstreamDriverCAFile /etc/pki/tls/certs/localroot.crt
+$DefaultNetstreamDriverCertFile /etc/pki/tls/certs/rsyslog.crt
+$DefaultNetstreamDriverKeyFile /etc/pki/tls/private/rsyslog.key
+
+$ModLoad imtcp
+
+$InputTCPServerStreamDriverMode 1
+$InputTCPServerStreamDriverAuthMode anon
+$InputTCPServerRun {{ syslog_tcp_port }}

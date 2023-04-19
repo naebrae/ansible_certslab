@@ -1,0 +1,50 @@
+dn: {{ ldap_base }}
+objectClass: dcObject
+objectClass: organization
+o: lab.local
+dc: lab
+
+dn: ou=people,{{ ldap_base }}
+objectClass: organizationalUnit
+objectClass: top
+ou: people
+
+dn: ou=groups,{{ ldap_base }}
+objectClass: organizationalUnit
+objectClass: top
+ou: groups
+
+dn: uid=johnd,ou=people,{{ ldap_base }}
+cn: John Doe
+givenName: John
+sn: Doe
+uid: johnd
+uidNumber: 10000
+gidNumber: 10000
+homeDirectory: /home/johnd
+objectClass: top
+objectClass: posixAccount
+objectClass: shadowAccount
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+loginShell: /bin/bash
+userPassword: {SSHA}28hB3IUUBiz8aUmVA8PvFiXz/f7zEl1C
+telexNumber: G24YUKCHHXRDWCPR
+
+dn: uid=janed,ou=people,{{ ldap_base }}
+cn: Jane Doe
+givenName: Jane
+sn: Doe
+uid: janed
+uidNumber: 10001
+gidNumber: 10001
+homeDirectory: /home/janed
+objectClass: top
+objectClass: posixAccount
+objectClass: shadowAccount
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+loginShell: /bin/bash
+userPassword: {SSHA}nSTdo0CYYUS+Hqm29tWFsPHONmLcXJkw

@@ -1,0 +1,73 @@
+--- 
+- shell: warn=no dnf -y module enable 389-ds
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 8
+
+- yum: name=389-ds-base state=installed
+
+- yum: name=389-ds-base-legacy-tools state=installed
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 8
+
+- template: src=389ds.inf.j2 dest=/root/389ds.inf
+- template: src=base.ldif.j2 dest=/tmp/base.ldif
+
+- group: name=dirsrv gid=389 state=present
+- user: name=dirsrv uid=389 group=dirsrv shell=/sbin/nologin home=/usr/share/dirsrv create_home=no comment="user for 389-ds-base" state=present
+
+- shell: creates=/etc/dirsrv/slapd-{{ inventory_hostname }} setup-ds.pl --silent --file=/root/389ds.inf
+
+- service: name=dirsrv@{{ inventory_hostname }} state=restarted
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 7
+
+- shell: creates=/etc/pki/tls/certs/ldap_lab_local.csr openssl req 
+   -newkey rsa:2048
+   -nodes
+   -keyout /etc/pki/tls/private/ldap_lab_local.key
+   -out /etc/pki/tls/certs/ldap_lab_local.csr
+   -subj "{{ cert_org }}CN=ldap.lab.local"
+- shell: openssl x509 
+   -req 
+   -days 365 
+   -sha256
+   -in /etc/pki/tls/certs/ldap_lab_local.csr
+   -out /etc/pki/tls/certs/ldap_lab_local.crt
+   -CA /etc/pki/tls/certs/localsrvca.crt 
+   -CAkey /etc/pki/tls/private/localsrvca.key 
+   -CAcreateserial
+   -extensions EXTS
+   -extfile <(cat
+   <(printf "[EXTS]\n")
+   <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
+   <(printf "subjectKeyIdentifier=hash\n")
+   <(printf "subjectAltName=DNS:ldap.lab.local\n")
+   <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
+   <(printf "extendedKeyUsage=serverAuth,clientAuth\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localsrvca.crl\n")
+   <(printf "certificatePolicies=@polsect\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localsrvca.crt\n")
+   <(printf "basicConstraints=critical,CA:false\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   )
+  args:
+   executable: /bin/bash
+
+- file: path=/tmp/crt.p12 state=absent
+- shell: creates=/tmp/crt.p12 openssl pkcs12 
+   -export 
+   -inkey /etc/pki/tls/private/ldap_lab_local.key
+   -in /etc/pki/tls/certs/ldap_lab_local.crt
+   -out /tmp/crt.p12 
+   -nodes 
+   -name "Server-Cert" 
+   -passout pass:changeit
+- shell: pk12util -i /tmp/crt.p12 -d /etc/dirsrv/slapd-{{ inventory_hostname }} -W changeit -K changeit
+- copy: content="Internal (Software) Token:changeit" dest=/etc/dirsrv/slapd-{{ inventory_hostname }}/pin.txt owner=dirsrv group=dirsrv mode=0400
+
+- copy: content="changeit" dest=/tmp/pin.txt owner=dirsrv group=dirsrv mode=0400
+- command: certutil -A -n localsrvca -t C,, -a -i /etc/pki/tls/certs/localsrvca.crt -d /etc/dirsrv/slapd-{{ inventory_hostname }} -f /tmp/pin.txt
+
+- template: src=ssl_enable.ldif.j2 dest=/tmp/ssl_enable.ldif
+- shell: ldapmodify -h localhost -p 1389 -x -D "cn=Directory Manager" -w Password1 -f /tmp/ssl_enable.ldif -c
+  ignore_errors: true
+
+- service: name=dirsrv@{{ inventory_hostname }} state=restarted
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 7

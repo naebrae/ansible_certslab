@@ -1,0 +1,46 @@
+---
+- yum:
+    name:
+    - postfix
+    - dovecot
+    state: installed
+
+- copy: src=10-master.conf dest=/etc/dovecot/conf.d/ owner=root group=root mode=0644
+- copy: src=10-mail.conf dest=/etc/dovecot/conf.d/ owner=root group=root mode=0644
+- copy: src=10-ssl.conf dest=/etc/dovecot/conf.d/ owner=root group=root mode=0644
+
+- shell: usermod -a -G mail vagrant
+- file: path=/var/mbox state=directory owner=root group=mail mode=0770
+
+- shell: creates=/etc/pki/dovecot/certs/dovecot.csr openssl req -newkey rsa:2048 -nodes
+   -keyout /etc/pki/dovecot/private/dovecot.pem
+   -out /etc/pki/dovecot/certs/dovecot.csr
+   -subj "{{ cert_org }}CN=imap.lab.local"
+- shell: openssl x509 -req -days 365 -sha256
+   -in /etc/pki/dovecot/certs/dovecot.csr
+   -out /etc/pki/dovecot/certs/dovecot.crt
+   -CA /etc/pki/tls/certs/localsrvca.crt
+   -CAkey /etc/pki/tls/private/localsrvca.key
+   -CAcreateserial
+   -extensions EXTS
+   -extfile <(cat
+   <(printf "[EXTS]\n")
+   <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
+   <(printf "subjectKeyIdentifier=hash\n")
+   <(printf "subjectAltName=DNS:imap.lab.local,DNS:pop.lab.local,IP:172.16.1.201\n")
+   <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
+   <(printf "extendedKeyUsage=serverAuth,clientAuth\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localsrvca.crl\n")
+   <(printf "certificatePolicies=@polsect\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localsrvca.crt\n")
+   <(printf "basicConstraints=critical,CA:false\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   )
+  args:
+   executable: /bin/bash
+- file: path=/etc/pki/dovecot/private/dovecot.pem owner=dovecot group=dovecot
+
+- shell: cat /etc/pki/dovecot/certs/dovecot.crt /etc/pki/tls/certs/localsrvca.crt > /etc/pki/dovecot/certs/dovecot.pem
+
+- name: restart dovecot
+  service: name=dovecot state=restarted

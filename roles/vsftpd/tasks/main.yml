@@ -1,0 +1,38 @@
+---
+- yum:
+    name:
+    - vsftpd
+    state: installed
+
+- copy: src=vsftpd.conf dest=/etc/vsftpd/vsftpd.conf owner=root group=root mode=0600
+- shell: creates=/etc/pki/tls/certs/ftp_lab_local.csr openssl req -newkey rsa:2048 -nodes
+   -keyout /etc/pki/tls/private/ftp_lab_local.key
+   -out /etc/pki/tls/certs/ftp_lab_local.csr
+   -subj "{{ cert_org }}CN=ftp.lab.local"
+- shell: openssl x509 -req -days 365 -sha256
+   -in /etc/pki/tls/certs/ftp_lab_local.csr
+   -out /etc/pki/tls/certs/ftp_lab_local.crt
+   -CA /etc/pki/tls/certs/localsrvca.crt 
+   -CAkey /etc/pki/tls/private/localsrvca.key 
+   -CAcreateserial
+   -extensions EXTS
+   -extfile <(cat
+   <(printf "[EXTS]\n")
+   <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
+   <(printf "subjectKeyIdentifier=hash\n")
+   <(printf "subjectAltName=DNS:ftp.lab.local\n")
+   <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
+   <(printf "extendedKeyUsage=serverAuth,clientAuth\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localsrvca.crl\n")
+   <(printf "certificatePolicies=@polsect\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localsrvca.crt\n")
+   <(printf "basicConstraints=critical,CA:false\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   )
+  args:
+    executable: /bin/bash
+- shell: cat /etc/pki/tls/certs/ftp_lab_local.crt /etc/pki/tls/certs/localsrvca.crt > /etc/pki/tls/certs/ftp_lab_local.pem
+
+- name: restart vsftpd
+  service: name=vsftpd state=restarted
+      

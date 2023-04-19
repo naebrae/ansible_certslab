@@ -1,0 +1,23 @@
+ 
+set imap_user=vagrant
+set imap_pass=vagrant
+
+set from="vagrant@lab.local"
+set realname="Vagrant User"
+set use_from= yes
+set envelope_from="yes"
+
+set spoolfile="imaps://$imap_user:$imap_pass@imap.lab.local/INBOX"
+
+set smtp_url=smtp://$imap_user:$imap_pass@smtp.lab.local/
+
+set folder="imaps://imap.lab.local/"
+set record="=Sent"
+set postponed="=Drafts"
+
+set ssl_starttls=yes
+set ssl_force_tls=yes
+unset imap_passive        
+set imap_check_subscribed
+set mail_check=60
+set timeout=10

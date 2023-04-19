@@ -1,0 +1,5 @@
+---
+ldap_base: "dc=lab,dc=local"
+ldap_base_o: "lab.local"
+ldap_base_dc: "lab"
+ldap_site: "ldap.lab.local"

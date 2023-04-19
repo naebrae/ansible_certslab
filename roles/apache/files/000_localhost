@@ -1,0 +1,21 @@
+ 
+DocumentRoot /var/www/html
+
+<Directory /var/www/html>
+    Options FollowSymLinks
+    AllowOverride All
+    Require all granted
+</Directory>
+
+ServerSignature off
+TraceEnable off
+FileETag none
+
+AddHandler cgi-script .cgi
+ScriptAlias /cgi-bin/ /var/www/cgi-bin/
+<Directory "/var/www/cgi-bin/">
+        AllowOverride None
+        SSLOptions +StdEnvVars
+        Options +ExecCGI -Includes
+        Require all granted
+</Directory>
