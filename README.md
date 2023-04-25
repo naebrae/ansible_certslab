@@ -40,13 +40,13 @@ vagrant ssh crtcli01
 > curl_examples. openssl_examples, and sslscan_examples include command line examples of using curl, openssl, and the included sslscan (https://github.com/rbsec/sslscan/releases) command to check the certificate.
 
 ```
-[vagrant@crtcli ~]$ echo "Just testing" | mail -s test vagrant@lab.local
+[vagrant@crtcli ~]$ echo "Just testing" | mail -s test vagrant@lab.home
 [vagrant@crtcli ~]$ mutt
 ```
 
 ```
 [vagrant@crtcli ~]$ ./ldapchk.py
-{'uid=janed,ou=people,dc=lab,dc=local': {'uid': 'janed', 'objectClass': ['top', 'posixAccount', 'shadowAccount', 'inetOrgPerson', 'organizationalPerson', 'person'], 'loginShell': '/bin/bash', 'userPassword': '{SSHA}nSTdo0CYYUS+Hqm29tWFsPHONmLcXJkw', 'uidNumber': '10001', 'gidNumber': '10001', 'sn': 'Doe', 'homeDirectory': '/home/janed', 'givenName': 'Jane', 'cn': 'Jane Doe'}}
+{'uid=janed,ou=people,dc=lab,dc=home': {'uid': 'janed', 'objectClass': ['top', 'posixAccount', 'shadowAccount', 'inetOrgPerson', 'organizationalPerson', 'person'], 'loginShell': '/bin/bash', 'userPassword': '{SSHA}nSTdo0CYYUS+Hqm29tWFsPHONmLcXJkw', 'uidNumber': '10001', 'gidNumber': '10001', 'sn': 'Doe', 'homeDirectory': '/home/janed', 'givenName': 'Jane', 'cn': 'Jane Doe'}}
 ```
 > Red Hat 8 requires *python3 ldapchk.py*
 
@@ -67,10 +67,10 @@ Password: Passw0rd
 ```
 ```
 [vagrant@crtcli ~]$ psql "sslcert=vagrantcln.crt sslkey=vagrantcln.key sslmode=verify-full host=crtsrv user=vagrant dbname=postgres"
-psql: server common name "postgresql.lab.local" does not match host name "crtsrv"
+psql: server common name "postgresql.lab.home" does not match host name "crtsrv"
 ```
 ```
-[vagrant@crtcli ~]$ psql "sslcert=vagrantcln.crt sslkey=vagrantcln.key sslmode=verify-full host=postgresql.lab.local user=vagrant dbname=postgres"
+[vagrant@crtcli ~]$ psql "sslcert=vagrantcln.crt sslkey=vagrantcln.key sslmode=verify-full host=postgresql.lab.home user=vagrant dbname=postgres"
 psql (9.2.23)
 SSL connection (cipher: DHE-RSA-AES256-GCM-SHA384, bits: 256)
 Type "help" for help.
@@ -78,7 +78,7 @@ Type "help" for help.
 postgres=> \q
 ```
 ```
-[vagrant@crtcli ~]$ psql "sslcert=vagrantcln.crt sslkey=vagrantcln.key sslrootcert=/etc/pki/tls/certs/localroot.crt sslmode=allow host=crtsrv user=vagrant dbname=postgres"
+[vagrant@crtcli ~]$ psql "sslcert=vagrantcln.crt sslkey=vagrantcln.key sslrootcert=/etc/pki/tls/certs/homeroot.crt sslmode=allow host=crtsrv user=vagrant dbname=postgres"
 psql (9.2.23)
 SSL connection (cipher: DHE-RSA-AES256-GCM-SHA384, bits: 256)
 Type "help" for help.

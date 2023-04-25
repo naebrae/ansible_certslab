@@ -8,36 +8,36 @@ then
   mkdir -p ${CADB}/
 fi
 
-if [ ! -f ${CADB}/localroot.idx ]
+if [ ! -f ${CADB}/homeroot.idx ]
 then
-  touch ${CADB}/localroot.idx
-  echo "unique_subject = no" > ${CADB}/localroot.idx.attr
+  touch ${CADB}/homeroot.idx
+  echo "unique_subject = no" > ${CADB}/homeroot.idx.attr
 fi
 
-if [ ! -f ${CADB}/localroot.srl ]
+if [ ! -f ${CADB}/homeroot.srl ]
 then
-  openssl rand -hex -out ${CADB}/localroot.srl 20
+  openssl rand -hex -out ${CADB}/homeroot.srl 20
 fi
 
 openssl req -newkey rsa:2048 -nodes \
--keyout ${CADB}/localroot.key \
--out ${CADB}/localroot.csr \
--subj "/C=AU/O=Local Lab/OU=www.lab.local/CN=Local Lab Root"
+-keyout ${CADB}/homeroot.key \
+-out ${CADB}/homeroot.csr \
+-subj "/C=AU/O=Home Lab/OU=www.lab.home/CN=Home Lab Root"
 
 openssl ca -batch -selfsign -startdate 20200101010000Z -enddate 20491231122359Z \
--in ${CADB}/localroot.csr \
--out ${CADB}/localroot.crt \
--keyfile ${CADB}/localroot.key \
+-in ${CADB}/homeroot.csr \
+-out ${CADB}/homeroot.crt \
+-keyfile ${CADB}/homeroot.key \
 -name root_CA \
 -config <(cat \
 <(printf "[ root_CA ]\n") \
-<(printf "database=${CADB}/localroot.idx\n") \
+<(printf "database=${CADB}/homeroot.idx\n") \
 <(printf "unique_subject=no\n") \
 <(printf "default_md=sha256\n") \
 <(printf "email_in_dn=no\n") \
 <(printf "rand_serial=yes\n") \
 <(printf "default_days=365\n") \
-<(printf "serial=${CADB}/localroot.srl\n") \
+<(printf "serial=${CADB}/homeroot.srl\n") \
 <(printf "new_certs_dir=${CADB}/\n") \
 <(printf "policy=policy_anything\n") \
 <(printf "[ policy_anything ]\n") \
@@ -59,40 +59,40 @@ openssl ca -batch -selfsign -startdate 20200101010000Z -enddate 20491231122359Z 
 <(printf "authorityKeyIdentifier=keyid:always,issuer\n") \
 )
 
-openssl verify -CAfile ${CADB}/localroot.crt ${CADB}/localroot.crt
+openssl verify -CAfile ${CADB}/homeroot.crt ${CADB}/homeroot.crt
 
 
-if [ ! -f ${CADB}/localclnca.idx ]
+if [ ! -f ${CADB}/homeclnca.idx ]
 then
-  touch ${CADB}/localclnca.idx
-  echo "unique_subject = no" > ${CADB}/localclnca.idx.attr
+  touch ${CADB}/homeclnca.idx
+  echo "unique_subject = no" > ${CADB}/homeclnca.idx.attr
 fi
 
-if [ ! -f ${CADB}/localclnca.srl ]
+if [ ! -f ${CADB}/homeclnca.srl ]
 then
-  openssl rand -hex -out ${CADB}/localclnca.srl 20
+  openssl rand -hex -out ${CADB}/homeclnca.srl 20
 fi
 
 openssl req -newkey rsa:2048 -nodes \
--keyout ${CADB}/localclnca.key \
--out ${CADB}/localclnca.csr \
--subj "/C=AU/O=Local Lab/OU=www.lab.local/CN=Local Lab Clients CA"
+-keyout ${CADB}/homeclnca.key \
+-out ${CADB}/homeclnca.csr \
+-subj "/C=AU/O=Home Lab/OU=www.lab.home/CN=Home Lab Clients CA"
 
 openssl ca -batch -startdate 20200101010000Z -enddate 20491231122359Z \
--in ${CADB}/localclnca.csr \
--out ${CADB}/localclnca.crt \
--keyfile ${CADB}/localroot.key \
--cert ${CADB}/localroot.crt \
+-in ${CADB}/homeclnca.csr \
+-out ${CADB}/homeclnca.crt \
+-keyfile ${CADB}/homeroot.key \
+-cert ${CADB}/homeroot.crt \
 -name root_CA \
 -config <(cat \
 <(printf "[ root_CA ]\n") \
-<(printf "database=${CADB}/localroot.idx\n") \
+<(printf "database=${CADB}/homeroot.idx\n") \
 <(printf "unique_subject=no\n") \
 <(printf "default_md=sha256\n") \
 <(printf "email_in_dn=no\n") \
 <(printf "rand_serial=yes\n") \
 <(printf "default_days=365\n") \
-<(printf "serial=${CADB}/localroot.srl\n") \
+<(printf "serial=${CADB}/homeroot.srl\n") \
 <(printf "new_certs_dir=${CADB}/\n") \
 <(printf "policy=policy_anything\n") \
 <(printf "[ policy_anything ]\n") \
@@ -114,39 +114,39 @@ openssl ca -batch -startdate 20200101010000Z -enddate 20491231122359Z \
 <(printf "authorityKeyIdentifier=keyid:always,issuer\n") \
 )
 
-openssl verify -CAfile ${CADB}/localroot.crt ${CADB}/localclnca.crt
+openssl verify -CAfile ${CADB}/homeroot.crt ${CADB}/homeclnca.crt
 
-if [ ! -f ${CADB}/localsrvca.idx ]
+if [ ! -f ${CADB}/homesrvca.idx ]
 then
-  touch ${CADB}/localsrvca.idx
-  echo "unique_subject = no" > ${CADB}/localsrvca.idx.attr
+  touch ${CADB}/homesrvca.idx
+  echo "unique_subject = no" > ${CADB}/homesrvca.idx.attr
 fi
 
-if [ ! -f ${CADB}/localsrvca.srl ]
+if [ ! -f ${CADB}/homesrvca.srl ]
 then
-  openssl rand -hex -out ${CADB}/localsrvca.srl 20
+  openssl rand -hex -out ${CADB}/homesrvca.srl 20
 fi
 
 openssl req -newkey rsa:2048 -nodes \
--keyout ${CADB}/localsrvca.key \
--out ${CADB}/localsrvca.csr \
--subj "/C=AU/O=Local Lab/OU=www.lab.local/CN=Local Lab Server CA"
+-keyout ${CADB}/homesrvca.key \
+-out ${CADB}/homesrvca.csr \
+-subj "/C=AU/O=Home Lab/OU=www.lab.home/CN=Home Lab Server CA"
 
 openssl ca -batch -days 7304 \
--in ${CADB}/localsrvca.csr \
--out ${CADB}/localsrvca.crt \
--keyfile ${CADB}/localroot.key \
--cert ${CADB}/localroot.crt \
+-in ${CADB}/homesrvca.csr \
+-out ${CADB}/homesrvca.crt \
+-keyfile ${CADB}/homeroot.key \
+-cert ${CADB}/homeroot.crt \
 -name root_CA \
 -config <(cat \
 <(printf "[ root_CA ]\n") \
-<(printf "database=${CADB}/localroot.idx\n") \
+<(printf "database=${CADB}/homeroot.idx\n") \
 <(printf "unique_subject=no\n") \
 <(printf "default_md=sha256\n") \
 <(printf "email_in_dn=no\n") \
 <(printf "rand_serial=yes\n") \
 <(printf "default_days=365\n") \
-<(printf "serial=${CADB}/localroot.srl\n") \
+<(printf "serial=${CADB}/homeroot.srl\n") \
 <(printf "new_certs_dir=${CADB}/\n") \
 <(printf "policy=policy_anything\n") \
 <(printf "[ policy_anything ]\n") \
@@ -168,4 +168,4 @@ openssl ca -batch -days 7304 \
 <(printf "authorityKeyIdentifier=keyid:always,issuer\n") \
 )
 
-openssl verify -CAfile ${CADB}/localroot.crt ${CADB}/localsrvca.crt
+openssl verify -CAfile ${CADB}/homeroot.crt ${CADB}/homesrvca.crt

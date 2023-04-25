@@ -10,26 +10,26 @@
 - shell: creates=/etc/pki/tls/certs/postfix.csr openssl req -newkey rsa:2048 -nodes
    -keyout /etc/pki/tls/private/postfix.key
    -out /etc/pki/tls/certs/postfix.csr
-   -subj "{{ cert_org }}CN=smtp.lab.local"
+   -subj "{{ cert_org }}CN=smtp.lab.home"
 - shell: openssl x509 -req -days 365 -sha256
    -in /etc/pki/tls/certs/postfix.csr
    -out /etc/pki/tls/certs/postfix.pem
-   -CA /etc/pki/tls/certs/localsrvca.crt 
-   -CAkey /etc/pki/tls/private/localsrvca.key 
+   -CA /etc/pki/tls/certs/homesrvca.crt 
+   -CAkey /etc/pki/tls/private/homesrvca.key 
    -CAcreateserial
    -extensions EXTS
    -extfile <(cat
    <(printf "[EXTS]\n")
    <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
    <(printf "subjectKeyIdentifier=hash\n")
-   <(printf "subjectAltName=DNS:smtp.lab.local,DNS:`hostname`,DNS:172.16.1.201,IP:172.16.1.201\n")
+   <(printf "subjectAltName=DNS:smtp.lab.home,DNS:`hostname`,DNS:172.16.1.201,IP:172.16.1.201\n")
    <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
    <(printf "extendedKeyUsage=serverAuth,clientAuth\n")
-   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localsrvca.crl\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.home/homesrvca.crl\n")
    <(printf "certificatePolicies=@polsect\n")
-   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localsrvca.crt\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.home,caIssuers;URI:http://ca.lab.home/homesrvca.crt\n")
    <(printf "basicConstraints=critical,CA:false\n")
-   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.home/CPS\n")
    )
   args:
    executable: /bin/bash

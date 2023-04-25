@@ -9,29 +9,29 @@
 - name: start slapd
   service: name=slapd enabled=yes state=started
 
-- shell: creates=/etc/pki/tls/certs/ldap_lab_local.csr openssl req -newkey rsa:2048 -nodes
-   -keyout /etc/pki/tls/private/ldap_lab_local.key
-   -out /etc/pki/tls/certs/ldap_lab_local.csr
-   -subj "{{ cert_org }}CN=ldap.lab.local"
+- shell: creates=/etc/pki/tls/certs/ldap_lab_home.csr openssl req -newkey rsa:2048 -nodes
+   -keyout /etc/pki/tls/private/ldap_lab_home.key
+   -out /etc/pki/tls/certs/ldap_lab_home.csr
+   -subj "{{ cert_org }}CN=ldap.lab.home"
 - shell: openssl x509 -req -days 365 -sha256
-   -in /etc/pki/tls/certs/ldap_lab_local.csr
-   -out /etc/pki/tls/certs/ldap_lab_local.crt
-   -CA /etc/pki/tls/certs/localsrvca.crt 
-   -CAkey /etc/pki/tls/private/localsrvca.key 
+   -in /etc/pki/tls/certs/ldap_lab_home.csr
+   -out /etc/pki/tls/certs/ldap_lab_home.crt
+   -CA /etc/pki/tls/certs/homesrvca.crt 
+   -CAkey /etc/pki/tls/private/homesrvca.key 
    -CAcreateserial
    -extensions EXTS
    -extfile <(cat
    <(printf "[EXTS]\n")
    <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
    <(printf "subjectKeyIdentifier=hash\n")
-   <(printf "subjectAltName=DNS:ldap.lab.local\n")
+   <(printf "subjectAltName=DNS:ldap.lab.home\n")
    <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
    <(printf "extendedKeyUsage=serverAuth,clientAuth\n")
-   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localsrvca.crl\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.home/homesrvca.crl\n")
    <(printf "certificatePolicies=@polsect\n")
-   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localsrvca.crt\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.home,caIssuers;URI:http://ca.lab.home/homesrvca.crt\n")
    <(printf "basicConstraints=critical,CA:false\n")
-   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.home/CPS\n")
    )
   args:
    executable: /bin/bash
@@ -56,7 +56,7 @@
   with_items:
   - ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f {{ download_dir }}/config.ldif
   - ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f {{ download_dir }}/ssl.ldif
-  - ldapadd -c -x -w Password1 -D cn=manager,dc=lab,dc=local -H ldapi:/// -f {{ download_dir }}/base.ldif
+  - ldapadd -c -x -w Password1 -D cn=manager,dc=lab,dc=home -H ldapi:/// -f {{ download_dir }}/base.ldif
   ignore_errors: true
 
 - template: src=slapd.j2 dest=/etc/sysconfig/slapd

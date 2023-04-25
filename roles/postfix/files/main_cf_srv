@@ -2,8 +2,8 @@
 inet_interfaces = all 
 inet_protocols = ipv4
 
-myhostname = smtp.lab.local
-mydomain = lab.local
+myhostname = smtp.lab.home
+mydomain = lab.home
 myorigin = $mydomain 
 mydestination = localhost, localhost.localdomain, $myhostname, localhost.$mydomain, $mydomain
 
@@ -20,7 +20,7 @@ smtpd_tls_security_level = may
 smtpd_tls_auth_only = yes
 smtpd_tls_key_file = /etc/pki/tls/private/postfix.key
 smtpd_tls_cert_file = /etc/pki/tls/certs/postfix.pem
-smtpd_tls_CAfile = /etc/pki/tls/certs/localsrvca.crt
+smtpd_tls_CAfile = /etc/pki/tls/certs/homesrvca.crt
 smtpd_tls_dh1024_param_file = /etc/pki/tls/private/postfix.dh.param
 smtpd_tls_loglevel = 1
 smtpd_tls_session_cache_timeout = 3600s

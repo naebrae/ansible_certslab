@@ -1,2 +1,2 @@
 [mysql]
-ssl-ca=/etc/pki/tls/certs/localroot.crt
+ssl-ca=/etc/pki/tls/certs/homeroot.crt

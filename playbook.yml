@@ -2,7 +2,7 @@
   gather_facts: true
   become: true
   vars: 
-  - host_domain: lab.local
+  - host_domain: lab.home
   tasks:
   - hostname: name={{ inventory_hostname }}.{{ host_domain }}
   - yum: name=libselinux-python state=present
@@ -17,38 +17,38 @@
   - service: name=sshd state=restarted
     when: ansible_distribution == "CentOS" or ansible_distribution == "Amazon"
 
-  - copy: src=cacerts/localroot.crt dest=/etc/pki/tls/certs/ owner=root group=root mode=0644
-  - shell: cp /etc/pki/tls/certs/localroot.crt /etc/pki/ca-trust/source/anchors/ && update-ca-trust
+  - copy: src=cacerts/homeroot.crt dest=/etc/pki/tls/certs/ owner=root group=root mode=0644
+  - shell: cp /etc/pki/tls/certs/homeroot.crt /etc/pki/ca-trust/source/anchors/ && update-ca-trust
 
 
 - hosts: crtsrv
   gather_facts: true
   become: true
   vars:
-    ldap_base: "dc=lab,dc=local"
+    ldap_base: "dc=lab,dc=home"
     download_dir: /home/vagrant
     cert_org: "/C=AU/ST=Western Australia/L=Perth/O=Organisation/OU=Unit/"
     client_org: "/O=Organisation/OU=Clients/"
     syslog_tcp_port: 10514
 
   pre_tasks:
-  - copy: src=cacerts/localsrvca.crt dest=/etc/pki/tls/certs/ owner=root group=root mode=0644
-  - copy: src=cacerts/localsrvca.key dest=/etc/pki/tls/private/ owner=root group=root mode=0600
-  - copy: src=cacerts/localclnca.crt dest=/etc/pki/tls/certs/ owner=root group=root mode=0644
-  - copy: src=cacerts/localclnca.key dest=/etc/pki/tls/private/ owner=root group=root mode=0600
-  - shell: cat /etc/pki/tls/certs/localsrvca.crt /etc/pki/tls/certs/localclnca.crt /etc/pki/tls/certs/localroot.crt > /etc/pki/tls/certs/localtrusts.crt
+  - copy: src=cacerts/homesrvca.crt dest=/etc/pki/tls/certs/ owner=root group=root mode=0644
+  - copy: src=cacerts/homesrvca.key dest=/etc/pki/tls/private/ owner=root group=root mode=0600
+  - copy: src=cacerts/homeclnca.crt dest=/etc/pki/tls/certs/ owner=root group=root mode=0644
+  - copy: src=cacerts/homeclnca.key dest=/etc/pki/tls/private/ owner=root group=root mode=0600
+  - shell: cat /etc/pki/tls/certs/homesrvca.crt /etc/pki/tls/certs/homeclnca.crt /etc/pki/tls/certs/homeroot.crt > /etc/pki/tls/certs/hometrusts.crt
 
   # Not used, but create ocsp certificate
-  - shell: openssl genrsa -out /etc/pki/tls/private/ocsp_lab_local.key 4096
+  - shell: openssl genrsa -out /etc/pki/tls/private/ocsp_lab_home.key 4096
   - shell: openssl req -new -nodes 
-      -key /etc/pki/tls/private/ocsp_lab_local.key 
-      -out /etc/pki/tls/certs/ocsp_lab_local.csr 
-      -subj "/C=AU/O=Local Lab/CN=ocsp.lab.local"
+      -key /etc/pki/tls/private/ocsp_lab_home.key 
+      -out /etc/pki/tls/certs/ocsp_lab_home.csr 
+      -subj "/C=AU/O=Home Lab/CN=ocsp.lab.home"
   - shell: openssl x509 -req -days 3652 -sha256 
-      -in /etc/pki/tls/certs/ocsp_lab_local.csr
-      -out /etc/pki/tls/certs/ocsp_lab_local.crt 
-      -CA /etc/pki/tls/certs/localsrvca.crt 
-      -CAkey /etc/pki/tls/private/localsrvca.key 
+      -in /etc/pki/tls/certs/ocsp_lab_home.csr
+      -out /etc/pki/tls/certs/ocsp_lab_home.crt 
+      -CA /etc/pki/tls/certs/homesrvca.crt 
+      -CAkey /etc/pki/tls/private/homesrvca.key 
       -CAcreateserial 
       -extensions EXTS \
       -extfile <(cat \
@@ -83,7 +83,7 @@
   become: true
   vars:
     client_org: "/O=Organisation/OU=Clients/"
-    syslog_server: crtsrv.lab.local
+    syslog_server: crtsrv.lab.home
     syslog_tcp_port: 10514
   tasks:
   - yum:
@@ -127,11 +127,11 @@
   - service: name=postfix state=restarted
 
   - yum: name=nss-tools state=installed
-#  - command: /usr/bin/certutil -A -n LocalRoot -t C,, -a -i /etc/pki/tls/certs/localroot.crt -d /etc/openldap/certs/
+#  - command: /usr/bin/certutil -A -n HomeRoot -t C,, -a -i /etc/pki/tls/certs/homeroot.crt -d /etc/openldap/certs/
 
   - file: path=/etc/openldap/cacerts state=directory
-#  - shell: warn=no ln -f -s /etc/pki/tls/certs/localroot.crt /etc/openldap/cacerts/`openssl x509 -hash -in /etc/pki/tls/certs/localroot.crt -noout`.0
-#  - shell: warn=no ln -f -s /etc/pki/tls/certs/localroot.crt /etc/pki/tls/certs/`openssl x509 -hash -in /etc/pki/tls/certs/localroot.crt -noout`.0
+#  - shell: warn=no ln -f -s /etc/pki/tls/certs/homeroot.crt /etc/openldap/cacerts/`openssl x509 -hash -in /etc/pki/tls/certs/homeroot.crt -noout`.0
+#  - shell: warn=no ln -f -s /etc/pki/tls/certs/homeroot.crt /etc/pki/tls/certs/`openssl x509 -hash -in /etc/pki/tls/certs/homeroot.crt -noout`.0
 
   - copy: src=ldapchk.py dest=/home/vagrant owner=vagrant group=vagrant mode=0744
   - copy: src=psqlchk.py dest=/home/vagrant owner=vagrant group=vagrant mode=0744
@@ -139,22 +139,22 @@
   - copy: src=mysql-ssl.cnf dest=/etc/my.cnf.d/ssl.cnf
 
   - file: path=/home/vagrant/.postgresql state=directory owner=vagrant group=vagrant mode=0700
-  - file: src=/etc/pki/tls/certs/localroot.crt dest=/home/vagrant/.postgresql/root.crt state=link
-  # - file: src=/etc/pki/tls/certs/localroot.crt dest=/home/vagrant/.postgresql/root.crt state=link owner=vagrant group=vagrant mode=0600
+  - file: src=/etc/pki/tls/certs/homeroot.crt dest=/home/vagrant/.postgresql/root.crt state=link
+  # - file: src=/etc/pki/tls/certs/homeroot.crt dest=/home/vagrant/.postgresql/root.crt state=link owner=vagrant group=vagrant mode=0600
 
   - block:
     # Collect client certificates from crtsrv for vagrant user
-    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.local/~/vagrantcln.crt
+    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/vagrantcln.crt
     - file: path=/home/vagrant/vagrantcln.crt owner=vagrant group=vagrant mode=0600
-    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.local/~/vagrantcln.key
+    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/vagrantcln.key
     - file: path=/home/vagrant/vagrantcln.key owner=vagrant group=vagrant mode=0600
-    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.local/~/vagrantsrv.crt
+    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/vagrantsrv.crt
     - file: path=/home/vagrant/vagrantsrv.crt owner=vagrant group=vagrant mode=0600
-    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.local/~/vagrantsrv.key
+    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/vagrantsrv.key
     - file: path=/home/vagrant/vagrantsrv.key owner=vagrant group=vagrant mode=0600
-    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.local/~/sslusercln.crt
+    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/sslusercln.crt
     - file: path=/home/vagrant/sslusercln.crt owner=vagrant group=vagrant mode=0600
-    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.local/~/sslusercln.key
+    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/sslusercln.key
     - file: path=/home/vagrant/sslusercln.key owner=vagrant group=vagrant mode=0600
     ignore_errors: true
 
@@ -162,7 +162,7 @@
   - shell: openssl req -newkey rsa:2048 -x509 -nodes -days 365 -sha256
      -keyout /home/vagrant/vagrantss.key
      -out /home/vagrant/vagrantss.crt
-     -subj "/emailAddress=vagrant\@lab.local{{ client_org }}CN=vagrant"
+     -subj "/emailAddress=vagrant\@lab.home{{ client_org }}CN=vagrant"
      -extensions EXTS
      -config <(cat
      <(printf "[ req ]\n")

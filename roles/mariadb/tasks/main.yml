@@ -7,26 +7,26 @@
 - shell: creates=/etc/pki/tls/certs/mariadb.csr openssl req -newkey rsa:2048 -nodes
    -keyout /etc/pki/tls/private/mariadb.key
    -out /etc/pki/tls/certs/mariadb.csr
-   -subj "{{ cert_org }}CN=mariadb.lab.local"
+   -subj "{{ cert_org }}CN=mariadb.lab.home"
 - shell: openssl x509 -req -days 365 -sha256
    -in /etc/pki/tls/certs/mariadb.csr
    -out /etc/pki/tls/certs/mariadb.crt
-   -CA /etc/pki/tls/certs/localclnca.crt 
-   -CAkey /etc/pki/tls/private/localclnca.key 
+   -CA /etc/pki/tls/certs/homeclnca.crt 
+   -CAkey /etc/pki/tls/private/homeclnca.key 
    -CAcreateserial
    -extensions EXTS
    -extfile <(cat
    <(printf "[EXTS]\n")
    <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
    <(printf "subjectKeyIdentifier=hash\n")
-   <(printf "subjectAltName=DNS:mariadb.lab.local\n")
+   <(printf "subjectAltName=DNS:mariadb.lab.home\n")
    <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
    <(printf "extendedKeyUsage=serverAuth,clientAuth\n")
-   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localclnca.crl\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.home/homeclnca.crl\n")
    <(printf "certificatePolicies=@polsect\n")
-   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localclnca.crt\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.home,caIssuers;URI:http://ca.lab.home/homeclnca.crt\n")
    <(printf "basicConstraints=critical,CA:false\n")
-   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.home/CPS\n")
    )
   args:
     executable: /bin/bash
@@ -35,12 +35,12 @@
 - service: name=mariadb state=started enabled=true
 - copy: src=mysqld-ssl.cnf dest=/etc/my.cnf.d/ssl.cnf 
 
-- command: mysql -e "CREATE USER 'ssluser'@'crtcli.lab.local' IDENTIFIED BY 'Passw0rd';"
+- command: mysql -e "CREATE USER 'ssluser'@'crtcli.lab.home' IDENTIFIED BY 'Passw0rd';"
   ignore_errors: true
-- command: mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'ssluser'@'crtcli.lab.local' REQUIRE SSL;"
+- command: mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'ssluser'@'crtcli.lab.home' REQUIRE SSL;"
 - command: mysql -e "CREATE USER 'vagrant'@'%';"
   ignore_errors: true
-- command: mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'vagrant'@'%' REQUIRE SUBJECT '/emailAddress=vagrant@lab.local/O=Organisation/OU=Clients/CN=vagrant' AND ISSUER '/C=AU/O=Local Lab/OU=www.lab.local/CN=Local Lab Clients CA';"
+- command: mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'vagrant'@'%' REQUIRE SUBJECT '/emailAddress=vagrant@lab.home/O=Organisation/OU=Clients/CN=vagrant' AND ISSUER '/C=AU/O=Home Lab/OU=www.lab.home/CN=Home Lab Clients CA';"
 - command: mysql -e "FLUSH PRIVILEGES;"
 
 - name: restart mariadb

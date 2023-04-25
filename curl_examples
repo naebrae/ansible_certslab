@@ -1,22 +1,22 @@
 #!/bin/bash
 
 # apache 
-curl -L http://crt1.lab.local
-curl -L http://crt2.lab.local
-curl https://crt1.lab.local
-curl https://crt2.lab.local
+curl -L http://crt1.lab.home
+curl -L http://crt2.lab.home
+curl https://crt1.lab.home
+curl https://crt2.lab.home
 
 # haproxy
-curl https://www.lab.local:1443
+curl https://www.lab.home:1443
 
 # tomcat
-curl https://tomcat.lab.local:8443
+curl https://tomcat.lab.home:8443
 
 # vsftp
-curl --ftp-ssl --use-ascii --user vagrant:vagrant --list-only ftp://ftp.lab.local/
+curl --ftp-ssl --use-ascii --user vagrant:vagrant --list-only ftp://ftp.lab.home/
 
 # nginx
-curl -L http://crt1.lab.local:2080
-curl -L http://crt2.lab.local:2080
-curl https://crt1.lab.local:2443
-curl https://crt2.lab.local:2443
+curl -L http://crt1.lab.home:2080
+curl -L http://crt2.lab.home:2080
+curl https://crt1.lab.home:2443
+curl https://crt2.lab.home:2443

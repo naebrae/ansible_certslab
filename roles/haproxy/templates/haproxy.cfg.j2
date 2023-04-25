@@ -16,7 +16,7 @@ defaults
     balance roundrobin
 
 frontend fe_apache
-    bind :1443 name https ssl crt /etc/pki/tls/haproxy.pem ca-file /etc/pki/tls/certs/localsrvca.crt
+    bind :1443 name https ssl crt /etc/pki/tls/haproxy.pem ca-file /etc/pki/tls/certs/homesrvca.crt
     bind :1080 name http
     reqadd X-Forwarded-Proto:\ https if { ssl_fc }
     reqadd X-Forwarded-Proto:\ http if !{ ssl_fc }

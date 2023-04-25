@@ -2,12 +2,12 @@
 - shell: creates=/etc/pki/tls/certs/rsyslog.csr openssl req -newkey rsa:2048 -nodes 
    -keyout /etc/pki/tls/private/rsyslog.key 
    -out /etc/pki/tls/certs/rsyslog.csr 
-   -subj "/CN=rsyslog.lab.local"
+   -subj "/CN=rsyslog.lab.home"
 - shell: openssl x509 -req -sha256 -days 3652
    -in /etc/pki/tls/certs/rsyslog.csr 
    -out /etc/pki/tls/certs/rsyslog.crt
-   -CA /etc/pki/tls/certs/localsrvca.crt 
-   -CAkey /etc/pki/tls/private/localsrvca.key 
+   -CA /etc/pki/tls/certs/homesrvca.crt 
+   -CAkey /etc/pki/tls/private/homesrvca.key 
    -CAcreateserial 
 
 - yum: name=rsyslog-gnutls state=installed

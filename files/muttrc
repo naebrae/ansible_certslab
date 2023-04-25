@@ -2,16 +2,16 @@
 set imap_user=vagrant
 set imap_pass=vagrant
 
-set from="vagrant@lab.local"
+set from="vagrant@lab.home"
 set realname="Vagrant User"
 set use_from= yes
 set envelope_from="yes"
 
-set spoolfile="imaps://$imap_user:$imap_pass@imap.lab.local/INBOX"
+set spoolfile="imaps://$imap_user:$imap_pass@imap.lab.home/INBOX"
 
-set smtp_url=smtp://$imap_user:$imap_pass@smtp.lab.local/
+set smtp_url=smtp://$imap_user:$imap_pass@smtp.lab.home/
 
-set folder="imaps://imap.lab.local/"
+set folder="imaps://imap.lab.home/"
 set record="=Sent"
 set postponed="=Drafts"
 

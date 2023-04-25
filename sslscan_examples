@@ -4,16 +4,16 @@ PATH=$PATH:~/sslscan
 
 # apache
 sslscan crtsrv:443
-sslscan --sni-name=crt1.lab.local crtsrv:443
-sslscan --sni-name=crt2.lab.local crtsrv:443
+sslscan --sni-name=crt1.lab.home crtsrv:443
+sslscan --sni-name=crt2.lab.home crtsrv:443
 
 # haproxy
 sslscan crtsrv:1443
 
 # nginx
 sslscan crtsrv:2443
-sslscan --sni-name=crt1.lab.local crtsrv:2443
-sslscan --sni-name=crt2.lab.local crtsrv:2443
+sslscan --sni-name=crt1.lab.home crtsrv:2443
+sslscan --sni-name=crt2.lab.home crtsrv:2443
 
 # tomcat
 sslscan crtsrv:8443

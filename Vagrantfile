@@ -23,8 +23,8 @@ Vagrant.configure(2) do |config|
 
   config.vm.provision "shell", inline: <<-SHELL
     ln -f -s /usr/share/zoneinfo/Australia/Perth /etc/localtime
-    echo "172.16.1.201	crtsrv.lab.local crtsrv crt1.lab.local crt2.lab.local www.lab.local tomcat.lab.local ftp.lab.local ldap.lab.local smtp.lab.local imap.lab.local pop.lab.local postgresql.lab.local" >> /etc/hosts
-    echo "172.16.1.101	crtcli.lab.local crtcli" >> /etc/hosts
+    echo "172.16.1.201	crtsrv.lab.home crtsrv crt1.lab.home crt2.lab.home www.lab.home tomcat.lab.home ftp.lab.home ldap.lab.home smtp.lab.home imap.lab.home pop.lab.home postgresql.lab.home" >> /etc/hosts
+    echo "172.16.1.101	crtcli.lab.home crtcli" >> /etc/hosts
   SHELL
   config.vm.provision "ansible" do |ansible|
     ansible.playbook = "playbook.yml"

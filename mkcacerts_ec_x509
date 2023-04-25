@@ -8,15 +8,15 @@ then
   mkdir -p ${CADB}/
 fi
 
-if [ ! -f ${CADB}/localroot.srl ]
+if [ ! -f ${CADB}/homeroot.srl ]
 then
-  openssl rand -hex -out ${CADB}/localroot.srl 20
+  openssl rand -hex -out ${CADB}/homeroot.srl 20
 fi
 
 openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:secp384r1 -x509 -nodes -sha256 -days 7304 \
--keyout ${CADB}/localroot.key \
--out ${CADB}/localroot.crt \
--subj "/C=AU/O=Local Lab/OU=www.lab.local/CN=Local Lab Root" \
+-keyout ${CADB}/homeroot.key \
+-out ${CADB}/homeroot.crt \
+-subj "/C=AU/O=Home Lab/OU=www.lab.home/CN=Home Lab Root" \
 -extensions exts \
 -config <(cat \
 <(printf "[ req ]\n") \
@@ -29,19 +29,19 @@ openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:secp384r1 -x509 -nodes -s
 <(printf "authorityKeyIdentifier=keyid\n") \
 )
 
-openssl verify -CAfile ${CADB}/localroot.crt ${CADB}/localroot.crt
+openssl verify -CAfile ${CADB}/homeroot.crt ${CADB}/homeroot.crt
 
 
 openssl req -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes \
--keyout ${CADB}/localclnca.key \
--out ${CADB}/localclnca.csr \
--subj "/C=AU/O=Local Lab/OU=www.lab.local/CN=Local Lab Clients CA"
+-keyout ${CADB}/homeclnca.key \
+-out ${CADB}/homeclnca.csr \
+-subj "/C=AU/O=Home Lab/OU=www.lab.home/CN=Home Lab Clients CA"
 
 openssl x509 -req -days 7304 -sha256 \
--in ${CADB}/localclnca.csr \
--out ${CADB}/localclnca.crt \
--CA ${CADB}/localroot.crt -CAkey ${CADB}/localroot.key \
--CAcreateserial -CAserial ${CADB}/localroot.srl \
+-in ${CADB}/homeclnca.csr \
+-out ${CADB}/homeclnca.crt \
+-CA ${CADB}/homeroot.crt -CAkey ${CADB}/homeroot.key \
+-CAcreateserial -CAserial ${CADB}/homeroot.srl \
 -extensions exts \
 -extfile <(cat \
 <(printf "[ exts ]\n") \
@@ -52,19 +52,19 @@ openssl x509 -req -days 7304 -sha256 \
 <(printf "authorityKeyIdentifier=keyid:always,issuer\n") \
 )
 
-openssl verify -CAfile ${CADB}/localroot.crt ${CADB}/localclnca.crt
+openssl verify -CAfile ${CADB}/homeroot.crt ${CADB}/homeclnca.crt
 
 
 openssl req -newkey ec -pkeyopt ec_paramgen_curve:secp384r1 -nodes \
--keyout ${CADB}/localsrvca.key \
--out ${CADB}/localsrvca.csr \
--subj "/C=AU/O=Local Lab/OU=www.lab.local/CN=Local Lab Server CA"
+-keyout ${CADB}/homesrvca.key \
+-out ${CADB}/homesrvca.csr \
+-subj "/C=AU/O=Home Lab/OU=www.lab.home/CN=Home Lab Server CA"
 
 openssl x509 -req -days 7304 -sha256 \
--in ${CADB}/localsrvca.csr \
--out ${CADB}/localsrvca.crt \
--CA ${CADB}/localroot.crt -CAkey ${CADB}/localroot.key \
--CAcreateserial -CAserial ${CADB}/localroot.srl \
+-in ${CADB}/homesrvca.csr \
+-out ${CADB}/homesrvca.crt \
+-CA ${CADB}/homeroot.crt -CAkey ${CADB}/homeroot.key \
+-CAcreateserial -CAserial ${CADB}/homeroot.srl \
 -extensions exts \
 -extfile <(cat \
 <(printf "[ exts ]\n") \
@@ -75,4 +75,4 @@ openssl x509 -req -days 7304 -sha256 \
 <(printf "authorityKeyIdentifier=keyid:always,issuer\n") \
 )
 
-openssl verify -CAfile ${CADB}/localroot.crt ${CADB}/localsrvca.crt
+openssl verify -CAfile ${CADB}/homeroot.crt ${CADB}/homesrvca.crt

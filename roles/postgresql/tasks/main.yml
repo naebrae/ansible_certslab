@@ -7,26 +7,26 @@
 - shell: creates=/etc/pki/tls/certs/postgresql.csr openssl req -newkey rsa:2048 -nodes
    -keyout /etc/pki/tls/private/postgresql.key
    -out /etc/pki/tls/certs/postgresql.csr
-   -subj "{{ cert_org }}CN=postgresql.lab.local"
+   -subj "{{ cert_org }}CN=postgresql.lab.home"
 - shell: openssl x509 -req -days 365 -sha256
    -in /etc/pki/tls/certs/postgresql.csr
    -out /etc/pki/tls/certs/postgresql.crt
-   -CA /etc/pki/tls/certs/localclnca.crt 
-   -CAkey /etc/pki/tls/private/localclnca.key 
+   -CA /etc/pki/tls/certs/homeclnca.crt 
+   -CAkey /etc/pki/tls/private/homeclnca.key 
    -CAcreateserial
    -extensions EXTS
    -extfile <(cat
    <(printf "[EXTS]\n")
    <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
    <(printf "subjectKeyIdentifier=hash\n")
-   <(printf "subjectAltName=DNS:postgresql.lab.local\n")
+   <(printf "subjectAltName=DNS:postgresql.lab.home\n")
    <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
    <(printf "extendedKeyUsage=serverAuth,clientAuth\n")
-   <(printf "crlDistributionPoints=URI:http://ca.lab.local/localclnca.crl\n")
+   <(printf "crlDistributionPoints=URI:http://ca.lab.home/homeclnca.crl\n")
    <(printf "certificatePolicies=@polsect\n")
-   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.local,caIssuers;URI:http://ca.lab.local/localclnca.crt\n")
+   <(printf "authorityInfoAccess=OCSP;URI:http://ocsp.lab.home,caIssuers;URI:http://ca.lab.home/homeclnca.crt\n")
    <(printf "basicConstraints=critical,CA:false\n")
-   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.local/CPS\n")
+   <(printf "[polsect]\npolicyIdentifier=anyPolicy\nCPS=https://www.lab.home/CPS\n")
    )
   args:
     executable: /bin/bash
@@ -36,7 +36,7 @@
 - copy: src=pg_hba.cnf dest=/var/lib/pgsql/data/pg_hba.conf owner=postgres group=postgres
 - shell: echo "listen_addresses = '*'" >> /var/lib/pgsql/data/postgresql.conf
 - shell: echo "ssl = on" >> /var/lib/pgsql/data/postgresql.conf
-- shell: echo "ssl_ca_file = '/etc/pki/tls/certs/localtrusts.crt'" >> /var/lib/pgsql/data/postgresql.conf
+- shell: echo "ssl_ca_file = '/etc/pki/tls/certs/hometrusts.crt'" >> /var/lib/pgsql/data/postgresql.conf
 - shell: echo "ssl_cert_file = '/etc/pki/tls/certs/postgresql.crt'" >> /var/lib/pgsql/data/postgresql.conf
 - shell: echo "ssl_key_file = '/etc/pki/tls/private/postgresql.key'" >> /var/lib/pgsql/data/postgresql.conf
 
