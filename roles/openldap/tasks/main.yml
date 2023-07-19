@@ -4,18 +4,20 @@
     - openldap
     - openldap-clients
     - openldap-servers
-    state: installed
+    state: present
+
+- template: src=slapd.j2 dest=/etc/sysconfig/slapd
 
 - name: start slapd
   service: name=slapd enabled=yes state=started
 
-- shell: creates=/etc/pki/tls/certs/ldap_lab_home.csr openssl req -newkey rsa:2048 -nodes
-   -keyout /etc/pki/tls/private/ldap_lab_home.key
-   -out /etc/pki/tls/certs/ldap_lab_home.csr
+- shell: creates=/etc/pki/tls/certs/openldap_lab_home.csr openssl req -newkey rsa:2048 -nodes
+   -keyout /etc/pki/tls/private/openldap_lab_home.key
+   -out /etc/pki/tls/certs/openldap_lab_home.csr
    -subj "{{ cert_org }}CN=ldap.lab.home"
 - shell: openssl x509 -req -days 365 -sha256
-   -in /etc/pki/tls/certs/ldap_lab_home.csr
-   -out /etc/pki/tls/certs/ldap_lab_home.crt
+   -in /etc/pki/tls/certs/openldap_lab_home.csr
+   -out /etc/pki/tls/certs/openldap_lab_home.crt
    -CA /etc/pki/tls/certs/homesrvca.crt 
    -CAkey /etc/pki/tls/private/homesrvca.key 
    -CAcreateserial
@@ -24,7 +26,7 @@
    <(printf "[EXTS]\n")
    <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
    <(printf "subjectKeyIdentifier=hash\n")
-   <(printf "subjectAltName=DNS:ldap.lab.home\n")
+   <(printf "subjectAltName=DNS:ldap.lab.home,DNS:openldap.lab.home\n")
    <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
    <(printf "extendedKeyUsage=serverAuth,clientAuth\n")
    <(printf "crlDistributionPoints=URI:http://ca.lab.home/homesrvca.crl\n")
@@ -58,8 +60,6 @@
   - ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f {{ download_dir }}/ssl.ldif
   - ldapadd -c -x -w Password1 -D cn=manager,dc=lab,dc=home -H ldapi:/// -f {{ download_dir }}/base.ldif
   ignore_errors: true
-
-- template: src=slapd.j2 dest=/etc/sysconfig/slapd
 
 - name: restart openldap
   service: name=slapd state=restarted
