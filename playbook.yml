@@ -12,7 +12,7 @@
     when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 5 and ansible_distribution_major_version|int <= 6
   - service: name=firewalld enabled=false state=stopped
     when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 7
-  - command: warn=no sed -i "s/^PasswordAuthentication no/PasswordAuthentication yes/" /etc/ssh/sshd_config
+  - command: sed -i "s/^PasswordAuthentication no/PasswordAuthentication yes/" /etc/ssh/sshd_config
     when: ansible_distribution == "CentOS" or ansible_distribution == "Amazon"
   - service: name=sshd state=restarted
     when: ansible_distribution == "CentOS" or ansible_distribution == "Amazon"
@@ -29,7 +29,7 @@
     download_dir: /home/vagrant
     cert_org: "/C=AU/ST=Western Australia/L=Perth/O=Organisation/OU=Unit/"
     client_org: "/O=Organisation/OU=Clients/"
-    syslog_tcp_port: 10514
+    syslog_tcp_port: 6514
 
   pre_tasks:
   - copy: src=cacerts/homesrvca.crt dest=/etc/pki/tls/certs/ owner=root group=root mode=0644
@@ -84,7 +84,7 @@
   vars:
     client_org: "/O=Organisation/OU=Clients/"
     syslog_server: crtsrv.lab.home
-    syslog_tcp_port: 10514
+    syslog_tcp_port: 6514
   tasks:
   - yum:
       name:
@@ -130,8 +130,8 @@
 #  - command: /usr/bin/certutil -A -n HomeRoot -t C,, -a -i /etc/pki/tls/certs/homeroot.crt -d /etc/openldap/certs/
 
   - file: path=/etc/openldap/cacerts state=directory
-#  - shell: warn=no ln -f -s /etc/pki/tls/certs/homeroot.crt /etc/openldap/cacerts/`openssl x509 -hash -in /etc/pki/tls/certs/homeroot.crt -noout`.0
-#  - shell: warn=no ln -f -s /etc/pki/tls/certs/homeroot.crt /etc/pki/tls/certs/`openssl x509 -hash -in /etc/pki/tls/certs/homeroot.crt -noout`.0
+#  - shell: ln -f -s /etc/pki/tls/certs/homeroot.crt /etc/openldap/cacerts/`openssl x509 -hash -in /etc/pki/tls/certs/homeroot.crt -noout`.0
+#  - shell: ln -f -s /etc/pki/tls/certs/homeroot.crt /etc/pki/tls/certs/`openssl x509 -hash -in /etc/pki/tls/certs/homeroot.crt -noout`.0
 
   - copy: src=ldapchk.py dest=/home/vagrant owner=vagrant group=vagrant mode=0744
   - copy: src=psqlchk.py dest=/home/vagrant owner=vagrant group=vagrant mode=0744
@@ -144,17 +144,17 @@
 
   - block:
     # Collect client certificates from crtsrv for vagrant user
-    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/vagrantcln.crt
+    - shell: curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/vagrantcln.crt
     - file: path=/home/vagrant/vagrantcln.crt owner=vagrant group=vagrant mode=0600
-    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/vagrantcln.key
+    - shell: curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/vagrantcln.key
     - file: path=/home/vagrant/vagrantcln.key owner=vagrant group=vagrant mode=0600
-    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/vagrantsrv.crt
+    - shell: curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/vagrantsrv.crt
     - file: path=/home/vagrant/vagrantsrv.crt owner=vagrant group=vagrant mode=0600
-    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/vagrantsrv.key
+    - shell: curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/vagrantsrv.key
     - file: path=/home/vagrant/vagrantsrv.key owner=vagrant group=vagrant mode=0600
-    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/sslusercln.crt
+    - shell: curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/sslusercln.crt
     - file: path=/home/vagrant/sslusercln.crt owner=vagrant group=vagrant mode=0600
-    - shell: warn=no curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/sslusercln.key
+    - shell: curl --silent --show-error --insecure --connect-timeout 10 --user vagrant:vagrant -O sftp://crtsrv.lab.home/~/sslusercln.key
     - file: path=/home/vagrant/sslusercln.key owner=vagrant group=vagrant mode=0600
     ignore_errors: true
 
