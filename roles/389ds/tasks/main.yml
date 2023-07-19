@@ -18,18 +18,18 @@
 - service: name=dirsrv@{{ inventory_hostname }} state=restarted
   when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 7
 
-- shell: creates=/etc/pki/tls/certs/ldap_lab_home.csr openssl req 
+- shell: creates=/etc/pki/tls/certs/389ds_lab_home.csr openssl req
    -newkey rsa:2048
    -nodes
-   -keyout /etc/pki/tls/private/ldap_lab_home.key
-   -out /etc/pki/tls/certs/ldap_lab_home.csr
+   -keyout /etc/pki/tls/private/389ds_lab_home.key
+   -out /etc/pki/tls/certs/389ds_lab_home.csr
    -subj "{{ cert_org }}CN=ldap.lab.home"
 - shell: openssl x509 
    -req 
    -days 365 
    -sha256
-   -in /etc/pki/tls/certs/ldap_lab_home.csr
-   -out /etc/pki/tls/certs/ldap_lab_home.crt
+   -in /etc/pki/tls/certs/389ds_lab_home.csr
+   -out /etc/pki/tls/certs/389ds_lab_home.crt
    -CA /etc/pki/tls/certs/homesrvca.crt 
    -CAkey /etc/pki/tls/private/homesrvca.key 
    -CAcreateserial
@@ -38,7 +38,7 @@
    <(printf "[EXTS]\n")
    <(printf "authorityKeyIdentifier=keyid:always,issuer\n")
    <(printf "subjectKeyIdentifier=hash\n")
-   <(printf "subjectAltName=DNS:ldap.lab.home\n")
+   <(printf "subjectAltName=DNS:ldap.lab.home,DNS:389ds.lab.home\n")
    <(printf "keyUsage=critical,digitalSignature,keyEncipherment\n")
    <(printf "extendedKeyUsage=serverAuth,clientAuth\n")
    <(printf "crlDistributionPoints=URI:http://ca.lab.home/homesrvca.crl\n")
@@ -53,8 +53,8 @@
 - file: path=/tmp/crt.p12 state=absent
 - shell: creates=/tmp/crt.p12 openssl pkcs12 
    -export 
-   -inkey /etc/pki/tls/private/ldap_lab_home.key
-   -in /etc/pki/tls/certs/ldap_lab_home.crt
+   -inkey /etc/pki/tls/private/389ds_lab_home.key
+   -in /etc/pki/tls/certs/389ds_lab_home.crt
    -out /tmp/crt.p12 
    -nodes 
    -name "Server-Cert" 
@@ -66,7 +66,7 @@
 - command: certutil -A -n homesrvca -t C,, -a -i /etc/pki/tls/certs/homesrvca.crt -d /etc/dirsrv/slapd-{{ inventory_hostname }} -f /tmp/pin.txt
 
 - template: src=ssl_enable.ldif.j2 dest=/tmp/ssl_enable.ldif
-- shell: ldapmodify -h localhost -p 1389 -x -D "cn=Directory Manager" -w Password1 -f /tmp/ssl_enable.ldif -c
+- shell: ldapmodify -h localhost -p 389 -x -D "cn=Directory Manager" -w Password1 -f /tmp/ssl_enable.ldif -c
   ignore_errors: true
 
 - service: name=dirsrv@{{ inventory_hostname }} state=restarted
