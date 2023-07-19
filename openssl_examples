@@ -35,12 +35,18 @@ echo | openssl s_client -showcerts -connect crtsrv:143 -starttls imap
 echo | openssl s_client -showcerts -connect crtsrv:993
 
 # openldap
-echo | openssl s_client -showcerts -connect crtsrv:389 -starttls ldap
-echo | openssl s_client -showcerts -connect crtsrv:636
-
-# 389ds
 echo | openssl s_client -showcerts -connect crtsrv:1389 -starttls ldap
 echo | openssl s_client -showcerts -connect crtsrv:1636
 
+# 389ds
+echo | openssl s_client -showcerts -connect crtsrv:389 -starttls ldap
+echo | openssl s_client -showcerts -connect crtsrv:636
+
+# mysql
+echo | openssl s_client -showcerts -connect crtsrv:3306 -starttls mysql
+
 # postgresql
 echo | openssl s_client -showcerts -connect crtsrv:5432 -starttls postgres
+
+# rsyslog
+echo | openssl s_client -showcerts -connect crtsrv:6514
